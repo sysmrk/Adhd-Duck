@@ -127,6 +127,9 @@ func TestGCAboveHighStopsAtLow(t *testing.T) {
 	if got := removedTags(f); got != "r.io/app:1,r.io/app:2" {
 		t.Fatalf("removed %q, want one batch of the oldest", got)
 	}
+	if g.cleaning {
+		t.Fatal("cleaning flag remained active below low")
+	}
 }
 
 func TestGCUsesRollbackOnlyAboveHighAndPersists(t *testing.T) {

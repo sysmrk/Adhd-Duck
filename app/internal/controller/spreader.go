@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"angryduck/internal/httpinput"
 	"bytes"
 	"context"
 	"crypto/rand"
@@ -1092,8 +1093,8 @@ func (s *Spreader) HandleDone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var d model.SpreadDone
-	if err := json.NewDecoder(io.LimitReader(r.Body, 16<<10)).Decode(&d); err != nil || d.Node == "" || d.Job == "" {
-		http.Error(w, "invalid report", http.StatusBadRequest)
+	if err := httpinput.Decode(w, r, 16<<10, &d); err != nil || d.Node == "" || d.Job == "" {
+		httpinput.Error(w, "invalid report", err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)

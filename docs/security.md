@@ -104,7 +104,7 @@ its own DaemonSet, used on shutdown to tell an uninstall from a rollout.
 
 ## Hardening checklist
 
-- Let the chart generate both tokens, or create them yourself with at least
+- Create both token Secrets before installation; the chart does not generate them. Use at least
   32 random characters. Never run without the shared token in production.
 - Restrict the webhook ingress to your CI runners' addresses.
 - Add a NetworkPolicy that allows port `18081` only from Angry Duck pods and

@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"angryduck/internal/httpinput"
 	"bytes"
 	"context"
 	"crypto/sha256"
@@ -250,8 +251,8 @@ func (s *Spread) HandleFetch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var o model.SpreadFetch
-	if err := json.NewDecoder(io.LimitReader(r.Body, 64<<10)).Decode(&o); err != nil {
-		http.Error(w, "invalid fetch order", http.StatusBadRequest)
+	if err := httpinput.Decode(w, r, 64<<10, &o); err != nil {
+		httpinput.Error(w, "invalid fetch order", err)
 		return
 	}
 	switch {
@@ -518,8 +519,8 @@ func (s *Spread) HandleDrop(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var d model.SpreadDrop
-	if err := json.NewDecoder(io.LimitReader(r.Body, 4<<10)).Decode(&d); err != nil || !validJobID(d.Job) {
-		http.Error(w, "invalid drop", http.StatusBadRequest)
+	if err := httpinput.Decode(w, r, 4<<10, &d); err != nil || !validJobID(d.Job) {
+		httpinput.Error(w, "invalid drop", err)
 		return
 	}
 	s.mu.Lock()
@@ -565,8 +566,8 @@ func (s *Spread) HandleFinalize(w http.ResponseWriter, r *http.Request) {
 	}
 	var f model.SpreadFinalize
 	// Metadata travels base64-encoded: allow for that on top of its cap.
-	if err := json.NewDecoder(io.LimitReader(r.Body, 2*spreadMaxMetadata)).Decode(&f); err != nil {
-		http.Error(w, "invalid finalize", http.StatusBadRequest)
+	if err := httpinput.Decode(w, r, 2*spreadMaxMetadata, &f); err != nil {
+		httpinput.Error(w, "invalid finalize", err)
 		return
 	}
 	if err := checkFinalize(f); err != nil {
@@ -634,6 +635,9 @@ func (s *Spread) finalizingAdd(d int) {
 func checkFinalize(f model.SpreadFinalize) error {
 	if !validJobID(f.Job) || f.Image == "" || !validDigest(f.TopDig) || f.TopType == "" {
 		return errors.New("invalid finalize")
+	}
+	if err := imageref.MatchDigest(f.Image, f.TopDig); err != nil {
+		return err
 	}
 	var total int
 	for d, b := range f.Metadata {

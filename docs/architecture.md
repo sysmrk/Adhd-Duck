@@ -4,8 +4,7 @@ This page is the map: what runs where, what it knows, and how an image moves
 from a CI push to cleanup. For why it's built this way, see
 [Design](design.md).
 
-Angry Duck has two components. Both are static Go binaries with no external
-Go dependencies.
+Angry Duck has two components. Both are static Go binaries; their Go dependencies, including containerd, gRPC and OCI libraries, are listed in `app/go.mod`.
 
 | Component | Runs as | Responsibilities |
 |---|---|---|

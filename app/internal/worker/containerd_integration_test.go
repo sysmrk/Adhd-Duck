@@ -522,7 +522,13 @@ func TestContainerd_ServesLegacyReceiver(t *testing.T) {
 		t.Fatalf("legacy request: %d format=%q %s", resp.StatusCode, resp.Header.Get(snapshotFormatHeader), b)
 	}
 
-	ctx := dst.ns(context.Background())
+	// A legacy receiver writes a temporary snapshot outside the production
+	// ApplySnapshot path. Protect that fixture from containerd background GC.
+	ctx, done, err := c.WithLease(dst.ns(context.Background()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer done(ctx)
 	sn := dst.snapshotterSvc()
 	key := "angryduck-rescue-" + randomSuffix()
 	mounts, err := sn.Prepare(ctx, key, app.chains[0])
@@ -550,7 +556,6 @@ func TestContainerd_ServesLegacyReceiver(t *testing.T) {
 	if err := sn.Commit(ctx, app.chains[1], key); err != nil {
 		t.Fatal(err)
 	}
-	_ = c
 	sameTree(t, withoutUserXattrs(tree(t, src, app.chains[1])), withoutUserXattrs(tree(t, dst, app.chains[1])))
 }
 

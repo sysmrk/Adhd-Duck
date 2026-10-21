@@ -331,6 +331,14 @@ func (g *ImageGC) Tick(ctx context.Context) {
 			n, ok, futile = g.remove(ctx, rollback, &u, func(u float64) bool { return u < g.cfg.High })
 			removed += n
 		}
+		if ok && u <= g.cfg.Low {
+			g.mu.Lock()
+			g.cleaning = false
+			g.stallUntil = time.Time{}
+			g.mu.Unlock()
+			gcCleaning.Set(0, g.nodeID)
+			gcStalled.Set(0, g.nodeID)
+		}
 		switch {
 		case futile:
 			g.stall(now, u)

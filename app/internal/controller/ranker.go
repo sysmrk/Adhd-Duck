@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"math"
 	"net/http"
 	"sort"
 	"strings"
@@ -80,6 +81,7 @@ var pullOrdersTotal = metrics.NewCounterVec(
 type Ranker struct {
 	registry            *Registry
 	topN                int
+	maxUtilization      float64
 	interval            time.Duration
 	excludeSubstrings   []string
 	preferImageLocality bool
@@ -162,6 +164,7 @@ func NewRanker(registry *Registry, topN int, interval time.Duration, excludeSubs
 	}
 	return &Ranker{
 		registry:            registry,
+		maxUtilization:      0.70,
 		topN:                topN,
 		interval:            interval,
 		excludeSubstrings:   excludeSubstrings,
@@ -214,10 +217,10 @@ func (rk *Ranker) orderLowestN(image string) []string {
 		return nil
 	}
 
-	eligible := rk.excludeMatching(fresh)
+	eligible := rk.CapacityEligible(rk.excludeMatching(fresh))
 	if len(eligible) == 0 {
-		logging.Warnf("angryduck-controller: cannot order preheat for image=%s: %d fresh worker(s) reported, but all matched an excluded-node substring (%v)",
-			image, len(fresh), rk.excludeSubstrings)
+		logging.Warnf("angryduck-controller: cannot order preheat for image=%s: %d fresh worker(s) reported, none pass node exclusions (%v) and capacity <= %.2f",
+			image, len(fresh), rk.excludeSubstrings, rk.maxUtilization)
 		return nil
 	}
 
@@ -468,4 +471,17 @@ func (rk *Ranker) sendPullOrder(nodeID, addr, image string) {
 	}
 	logging.Infof("angryduck-controller: ordered node=%s to pull image=%s", nodeID, image)
 	pullOrdersTotal.Inc(nodeID, "success", registryLabel)
+}
+
+// SetMaxUtilization configures the same capacity ceiling as propagation.
+func (rk *Ranker) SetMaxUtilization(max float64) { rk.maxUtilization = max }
+
+func (rk *Ranker) CapacityEligible(workers []*workerEntry) []*workerEntry {
+	var out []*workerEntry
+	for _, w := range workers {
+		if !math.IsNaN(w.Utilization) && !math.IsInf(w.Utilization, 0) && w.Utilization >= 0 && w.Utilization <= rk.maxUtilization {
+			out = append(out, w)
+		}
+	}
+	return out
 }

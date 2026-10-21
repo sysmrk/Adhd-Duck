@@ -217,7 +217,7 @@ func (r *Registry) Update(rep model.WorkerReport) model.ReportAck {
 	}
 	w.Address = rep.Address
 	w.Utilization = rep.Utilization
-	w.LastSeen = rep.Timestamp
+	w.LastSeen = time.Now() // Liveness uses receipt time, never the worker clock.
 
 	// A worker omits an unchanged inventory once we've echoed its hash.
 	// Workers that predate this never omit it.

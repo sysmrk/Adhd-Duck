@@ -59,8 +59,7 @@ already be moving.
 - **Layers, not images.** Each layer spreads on its own. The moment one node
   has a layer, it becomes a source for every other node. No node waits for
   another to finish a whole image.
-- **Two lanes per node.** Each node pulls one layer from the registry and
-  receives another from a peer at the same time.
+- **Parallel transfers.** Registry and peer transfers may overlap, including transfers for different blobs. Controller scheduling limits and per-source limits apply; there is no global worker budget covering all paths yet.
 - **Rarest first.** The layer with the fewest holders goes first, so new
   sources appear where they are scarcest.
 - **Races instead of waits.** When one node is slow pulling a layer, an idle
@@ -169,7 +168,7 @@ reading code. See [Observability](observability.md).
 
 ## Small on purpose
 
-Two static Go binaries with no external Go dependencies, no database and no
+Two static Go binaries using containerd, gRPC and other dependencies listed in go.mod, no database and no
 storage of their own. The controller used about 13m CPU and 22 MiB for a
 simulated fleet of 150 nodes; a worker holds about 5 to 7 MiB at idle. See
 [Sizing](operations.md#sizing).

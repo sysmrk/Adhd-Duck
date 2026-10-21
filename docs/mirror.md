@@ -5,7 +5,7 @@ containerd. containerd asks the mirror first for every manifest and blob by
 digest, for every image, whether or not it was preheated. The mirror answers
 from the node or a peer, or tells containerd to go to the registry.
 
-The mirror is off by default (`MIRROR_ENABLED=false`).
+The binary defaults to `MIRROR_ENABLED=false`; the Helm chart defaults to `true`. Set the value explicitly for your installation.
 
 ## How it works
 

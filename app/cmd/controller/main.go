@@ -33,6 +33,9 @@ func main() {
 	if err := config.Load(envFile); err != nil {
 		log.Printf("angryduck-controller: warning: failed to load %s: %v", envFile, err)
 	}
+	if err := config.Validate(); err != nil {
+		log.Fatalf("invalid configuration: %v", err)
+	}
 	logging.SetLevel(logging.ParseLevel(config.String("LOG_LEVEL", "info")))
 	memlimit.Apply("controller")
 	metrics.SetEventTTL(config.Duration("METRICS_EVENT_TTL_S", 15))
@@ -59,6 +62,7 @@ func main() {
 
 	registry := controller.NewRegistry(staleAfter, targetTTL)
 	ranker := controller.NewRanker(registry, topN, rankInterval, excludeNodeSubstrings, preferImageLocality, labelRegistry)
+	ranker.SetMaxUtilization(config.Float("PROPAGATE_MAX_UTILIZATION", 0.70))
 	server := controller.NewServer(registry, ranker)
 	authMode, err := sharedtoken.ParseMode(config.String("AUTH_MODE", ""))
 	if err != nil {

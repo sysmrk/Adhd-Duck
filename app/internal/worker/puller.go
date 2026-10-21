@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"angryduck/internal/httpinput"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -85,8 +86,8 @@ func (p *Puller) HandlePull(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var order model.PullOrder
-	if err := json.NewDecoder(r.Body).Decode(&order); err != nil {
-		http.Error(w, "invalid json body", http.StatusBadRequest)
+	if err := httpinput.Decode(w, r, 64<<10, &order); err != nil {
+		httpinput.Error(w, "invalid json body", err)
 		return
 	}
 	if order.Image == "" {
@@ -163,8 +164,8 @@ func (p *Puller) HandleCancel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var order model.PullOrder
-	if err := json.NewDecoder(r.Body).Decode(&order); err != nil || order.Image == "" {
-		http.Error(w, "invalid json body", http.StatusBadRequest)
+	if err := httpinput.Decode(w, r, 64<<10, &order); err != nil || order.Image == "" {
+		httpinput.Error(w, "invalid json body", err)
 		return
 	}
 	image := imageref.Normalize(order.Image)

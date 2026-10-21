@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"angryduck/internal/httpinput"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -246,8 +247,8 @@ func (r *ImageRepair) HandleRepair(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	var o model.RepairOrder
-	if err := json.NewDecoder(io.LimitReader(req.Body, 64<<10)).Decode(&o); err != nil || o.Image == "" {
-		http.Error(w, "bad request", http.StatusBadRequest)
+	if err := httpinput.Decode(w, req, 64<<10, &o); err != nil || o.Image == "" {
+		httpinput.Error(w, "bad request", err)
 		return
 	}
 	r.Wake(o.Image, o.Reason)

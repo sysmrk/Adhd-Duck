@@ -53,6 +53,9 @@ func main() {
 	if err := config.Load(envFile); err != nil {
 		log.Printf("angryduck-worker: warning: failed to load %s: %v", envFile, err)
 	}
+	if err := config.Validate(); err != nil {
+		log.Fatalf("invalid configuration: %v", err)
+	}
 	logging.SetLevel(logging.ParseLevel(config.String("LOG_LEVEL", "info")))
 	memlimit.Apply("worker")
 	metrics.SetEventTTL(config.Duration("METRICS_EVENT_TTL_S", 15))

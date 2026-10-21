@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"angryduck/internal/httpinput"
 	"bytes"
 	"compress/gzip"
 	"context"
@@ -147,8 +148,8 @@ func (rs *Rescue) HandleRescue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var order model.RescueOrder
-	if err := json.NewDecoder(r.Body).Decode(&order); err != nil || order.Image == "" {
-		http.Error(w, "invalid rescue order", http.StatusBadRequest)
+	if err := httpinput.Decode(w, r, 64<<10, &order); err != nil || order.Image == "" {
+		httpinput.Error(w, "invalid rescue order", err)
 		return
 	}
 	order.Image = imageref.Normalize(order.Image)
@@ -684,6 +685,9 @@ func (rs *Rescue) fetchPlan(ctx context.Context, image string, src model.RescueS
 	if plan.Image != image || plan.Top.Digest == "" || len(plan.Blobs) == 0 {
 		return blobship.Plan{}, fmt.Errorf("source returned an unusable plan")
 	}
+	if err := imageref.MatchDigest(image, plan.Top.Digest); err != nil {
+		return blobship.Plan{}, err
+	}
 	return plan, nil
 }
 
@@ -709,8 +713,8 @@ func (rs *Rescue) HandlePlan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req model.BlobPlanRequest
-	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&req); err != nil || req.Image == "" {
-		http.Error(w, "invalid plan request", http.StatusBadRequest)
+	if err := httpinput.Decode(w, r, 1<<20, &req); err != nil || req.Image == "" {
+		httpinput.Error(w, "invalid plan request", err)
 		return
 	}
 	plan, err := blobship.BuildPlan(r.Context(), rs.store, imageref.Normalize(req.Image), req.Platform)
@@ -749,8 +753,8 @@ func (rs *Rescue) HandleExport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req model.BlobExportRequest
-	if err := json.NewDecoder(io.LimitReader(r.Body, 4<<20)).Decode(&req); err != nil || req.Image == "" {
-		http.Error(w, "invalid export request", http.StatusBadRequest)
+	if err := httpinput.Decode(w, r, 4<<20, &req); err != nil || req.Image == "" {
+		httpinput.Error(w, "invalid export request", err)
 		return
 	}
 	plan, err := blobship.BuildPlan(r.Context(), rs.store, imageref.Normalize(req.Image), req.Platform)
@@ -798,8 +802,8 @@ func (rs *Rescue) HandleSnapshotExport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req model.SnapshotExportRequest
-	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&req); err != nil || req.Image == "" || req.ChainID == "" {
-		http.Error(w, "invalid snapshot export request", http.StatusBadRequest)
+	if err := httpinput.Decode(w, r, 1<<20, &req); err != nil || req.Image == "" || req.ChainID == "" {
+		httpinput.Error(w, "invalid snapshot export request", err)
 		return
 	}
 	plan, err := blobship.BuildPlan(r.Context(), rs.store, imageref.Normalize(req.Image), req.Platform)

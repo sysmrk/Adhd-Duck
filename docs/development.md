@@ -30,7 +30,7 @@ docs/                      documentation
 ```
 
 The worker talks to containerd with containerd's own Go client and CRI API;
-those, gRPC and the OCI types are the module's only dependencies.
+the complete dependency list is maintained in `app/go.mod` and `app/go.sum`.
 
 ## Build
 

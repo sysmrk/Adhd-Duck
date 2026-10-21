@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"angryduck/internal/httpinput"
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -103,8 +104,8 @@ func (s *Server) handlePreheat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req model.PreheatRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid json body", http.StatusBadRequest)
+	if err := httpinput.Decode(w, r, 64<<10, &req); err != nil {
+		httpinput.Error(w, "invalid json body", err)
 		return
 	}
 	req.Image = strings.TrimSpace(req.Image)
@@ -145,6 +146,10 @@ func (s *Server) handlePreheat(w http.ResponseWriter, r *http.Request) {
 		logging.Warnf("angryduck-controller: can't spread image=%s blob by blob (%v); seeding it whole instead", req.Image, err)
 	}
 
+	if len(s.ranker.CapacityEligible(s.ranker.excludeMatching(s.registry.FreshWorkers()))) == 0 {
+		writeJSON(w, http.StatusServiceUnavailable, model.PreheatResponse{Accepted: false, Reason: "no eligible worker has available capacity"})
+		return
+	}
 	s.registry.SetTarget(req.Image)
 	ordered := s.ranker.OrderNow(req.Image)
 	if s.propagator != nil {
@@ -166,8 +171,8 @@ func (s *Server) handleReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var rep model.WorkerReport
-	if err := json.NewDecoder(r.Body).Decode(&rep); err != nil {
-		http.Error(w, "invalid json body", http.StatusBadRequest)
+	if err := httpinput.Decode(w, r, httpinput.ReportLimit, &rep); err != nil {
+		httpinput.Error(w, "invalid json body", err)
 		return
 	}
 	if rep.NodeID == "" || rep.Address == "" {

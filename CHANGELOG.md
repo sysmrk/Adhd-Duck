@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased — first eight improvements
+
+- Correct operator documentation, token guidance and mirror defaults.
+- Clear GC cleaning state immediately when a batch reaches the low threshold.
+- Use controller receipt time for worker liveness.
+- Reject invalid numeric/boolean configuration before startup.
+- Bind pinned image requests to the root descriptor in finalize and rescue.
+- Apply propagation capacity limits to fallback seeds; return 503 without capacity.
+- Bound JSON bodies, fields, collections and nesting; return 413 for oversized bodies.
+- Reject unknown/duplicate fields, trailing JSON and invalid image/digest inputs.
+- Protect the legacy integration-test snapshot with a lease to avoid background-GC races.
+
+API clients must use the documented schema; previously ignored unknown fields
+are now rejected. Authentication fail-closed is a separate planned change.
+See [input validation](docs/input-validation.md).
+
 ## 1.8.15
 
 The blob is the unit everywhere: a node now receives any number of
