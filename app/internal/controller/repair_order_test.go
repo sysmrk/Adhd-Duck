@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"angryduck/internal/kube"
-	"angryduck/internal/model"
+	"adhdduck/internal/kube"
+	"adhdduck/internal/model"
 )
 
 func brokenPod(ns, name, node, image, reason, message string) kube.Pod {

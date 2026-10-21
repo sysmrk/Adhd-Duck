@@ -1,5 +1,5 @@
 // Package metrics is a minimal, dependency-free metrics registry that
-// renders in Prometheus text exposition format. Angry Duck only needs a
+// renders in Prometheus text exposition format. ADHD Duck only needs a
 // handful of counters and gauges — pulling in the full client_golang SDK
 // for that would be a heavy dependency for so little. This hand-rolls
 // the exposition format the same way worker/metrics.go hand-parses node

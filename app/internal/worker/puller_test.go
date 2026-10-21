@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"angryduck/internal/model"
+	"adhdduck/internal/model"
 )
 
 func TestPreheatedReposPrunesPastRetention(t *testing.T) {
@@ -43,10 +43,10 @@ func TestHandlePullRecordsPreheatedRepoAndCounts(t *testing.T) {
 	if !p.PreheatedRepos(time.Hour)["docker.io/library/nginx"] {
 		t.Fatal("repo not recorded as preheated")
 	}
-	for time.Now().Before(deadline) && !strings.Contains(scrapeMetrics(t), `angryduck_worker_pulls_total{node="`+node+`",result="success",registry=""} 1`) {
+	for time.Now().Before(deadline) && !strings.Contains(scrapeMetrics(t), `adhdduck_worker_pulls_total{node="`+node+`",result="success",registry=""} 1`) {
 		time.Sleep(5 * time.Millisecond)
 	}
-	if !strings.Contains(scrapeMetrics(t), `angryduck_worker_pulls_total{node="`+node+`",result="success",registry=""} 1`) {
+	if !strings.Contains(scrapeMetrics(t), `adhdduck_worker_pulls_total{node="`+node+`",result="success",registry=""} 1`) {
 		t.Fatal("pull not counted")
 	}
 }
@@ -85,7 +85,7 @@ func TestCancelStopsARunningPull(t *testing.T) {
 	if p.Pulling(image) {
 		t.Fatal("pull still running after cancel")
 	}
-	want := `angryduck_worker_pulls_total{node="` + node + `",result="cancelled",registry=""} 1`
+	want := `adhdduck_worker_pulls_total{node="` + node + `",result="cancelled",registry=""} 1`
 	for time.Now().Before(deadline) && !strings.Contains(scrapeMetrics(t), want) {
 		time.Sleep(5 * time.Millisecond)
 	}

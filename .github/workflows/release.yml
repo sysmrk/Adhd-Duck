@@ -25,7 +25,7 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  OWNER: hatam-abolghasemi
+  OWNER: ${{ github.repository_owner }}
 
 jobs:
   prepare:
@@ -49,8 +49,8 @@ jobs:
         env:
           V: ${{ steps.v.outputs.version }}
         run: |
-          app=$(sed -n 's/^appVersion: *"\{0,1\}\([^"]*\)"\{0,1\}/\1/p' helm/angryduck/Chart.yaml)
-          chart=$(sed -n 's/^version: *//p' helm/angryduck/Chart.yaml)
+          app=$(sed -n 's/^appVersion: *"\{0,1\}\([^"]*\)"\{0,1\}/\1/p' helm/adhdduck/Chart.yaml)
+          chart=$(sed -n 's/^version: *//p' helm/adhdduck/Chart.yaml)
           [ "$app" = "$V" ] || { echo "::error::Chart.yaml appVersion is $app, tag is $V"; exit 1; }
           [ "$chart" = "$V" ] || { echo "::error::Chart.yaml version is $chart, tag is $V"; exit 1; }
           grep -q "^## ${V}\$" CHANGELOG.md || { echo "::error::CHANGELOG.md has no '## ${V}' section"; exit 1; }
@@ -82,8 +82,8 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.OWNER }}/angry-duck-${{ matrix.component }}:${{ needs.prepare.outputs.version }}
-            ${{ env.REGISTRY }}/${{ env.OWNER }}/angry-duck-${{ matrix.component }}:latest
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/adhd-duck-${{ matrix.component }}:${{ needs.prepare.outputs.version }}
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/adhd-duck-${{ matrix.component }}:latest
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.version=${{ needs.prepare.outputs.version }}
@@ -106,8 +106,8 @@ jobs:
           V: ${{ needs.prepare.outputs.version }}
         run: |
           echo "$TOKEN" | helm registry login "$REGISTRY" -u "$ACTOR" --password-stdin
-          helm package helm/angryduck -d dist
-          helm push "dist/angryduck-${V}.tgz" "oci://${REGISTRY}/${OWNER}/charts"
+          helm package helm/adhdduck -d dist
+          helm push "dist/adhdduck-${V}.tgz" "oci://${REGISTRY}/${OWNER}/charts"
 
   release:
     name: GitHub release
@@ -128,7 +128,7 @@ jobs:
           git fetch --force origin "refs/tags/${TAG}:refs/tags/${TAG}"
           if [ -z "$TITLE" ]; then
             TITLE=$(git tag -l --format='%(contents:subject)' "$TAG")
-            case "$TITLE" in "Angry Duck"*|"$TAG"|"$V") TITLE="" ;; esac
+            case "$TITLE" in "ADHD Duck"*|"$TAG"|"$V") TITLE="" ;; esac
           fi
           if [ -n "$TITLE" ]; then echo "TITLE=$TAG — $TITLE" >> "$GITHUB_ENV"; else echo "TITLE=$TAG" >> "$GITHUB_ENV"; fi
           python3 - <<'PY' > notes.md
@@ -149,21 +149,21 @@ jobs:
           if cur: out.append(cur)
           body = re.sub(r"\n{3,}", "\n\n", "\n".join(out)).strip()
           body = body.replace("](docs/", f"]({repo}/blob/{tag}/docs/")
-          owner = "hatam-abolghasemi"
+          owner = os.environ["OWNER"].lower()
           fence = "`" * 3
           print(body)
           print()
           print("Images:")
           print()
           print(fence)
-          print(f"ghcr.io/{owner}/angry-duck-controller:{v}")
-          print(f"ghcr.io/{owner}/angry-duck-worker:{v}")
+          print(f"ghcr.io/{owner}/adhd-duck-controller:{v}")
+          print(f"ghcr.io/{owner}/adhd-duck-worker:{v}")
           print(fence)
           print()
-          print(f"Helm chart: [`oci://ghcr.io/{owner}/charts/angryduck`]({repo}/tree/{tag}/helm/angryduck) (version {v}):")
+          print(f"Helm chart: [`oci://ghcr.io/{owner}/charts/adhdduck`]({repo}/tree/{tag}/helm/adhdduck) (version {v}):")
           print()
           print(fence)
-          print(f"helm upgrade --install angryduck oci://ghcr.io/{owner}/charts/angryduck --version {v} --namespace angryduck --create-namespace -f my-values.yaml")
+          print(f"helm upgrade --install adhdduck oci://ghcr.io/{owner}/charts/adhdduck --version {v} --namespace adhdduck --create-namespace -f my-values.yaml")
           print(fence)
           PY
       - name: Create or update the release

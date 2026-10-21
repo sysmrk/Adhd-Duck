@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"angryduck/internal/metrics"
+	"adhdduck/internal/metrics"
 )
 
 // Per-image history: what happened to each image, node by node. Each is an
@@ -14,32 +14,32 @@ import (
 // state and stays until it ends.
 var (
 	imageSpreadStarted = metrics.NewRecentGaugeVec(
-		"angryduck_controller_image_spread_started_timestamp_seconds",
+		"adhdduck_controller_image_spread_started_timestamp_seconds",
 		"When the image's latest spread started (its preheat), as Unix time.",
 		"image",
 	)
 	imageSpreadSeconds = metrics.NewRecentGaugeVec(
-		"angryduck_controller_image_spread_seconds",
+		"adhdduck_controller_image_spread_seconds",
 		"How long the image's spread took, by result: complete, superseded, expired; running (so far) while it runs.",
 		"image", "result",
 	)
 	imageDelivered = metrics.NewRecentGaugeVec(
-		"angryduck_controller_image_delivered_timestamp_seconds",
-		"When a node got the image, as Unix time, by how (see angryduck_controller_image_delivery_seconds).",
+		"adhdduck_controller_image_delivered_timestamp_seconds",
+		"When a node got the image, as Unix time, by how (see adhdduck_controller_image_delivery_seconds).",
 		"image", "node", "via",
 	)
 	imageDeliverySeconds = metrics.NewRecentGaugeVec(
-		"angryduck_controller_image_delivery_seconds",
-		"How long a node took to get the image, from the preheat (or, for a rescue, from when its pull got stuck), by how: present (had it already), peer, registry, peer+registry (spread blobs by path), local (spread with every layer already here), image (whole image from a peer, spread's last resort), seed (pulled whole from the registry), propagate (whole image from a peer), rescue, kubelet (got it without Angry Duck).",
+		"adhdduck_controller_image_delivery_seconds",
+		"How long a node took to get the image, from the preheat (or, for a rescue, from when its pull got stuck), by how: present (had it already), peer, registry, peer+registry (spread blobs by path), local (spread with every layer already here), image (whole image from a peer, spread's last resort), seed (pulled whole from the registry), propagate (whole image from a peer), rescue, kubelet (got it without ADHD Duck).",
 		"image", "node", "via",
 	)
 	imageReceivedBytes = metrics.NewRecentGaugeVec(
-		"angryduck_controller_image_received_bytes",
+		"adhdduck_controller_image_received_bytes",
 		"Bytes a node received for the image, by path: registry, peer (spread blobs), image (spread's whole-image fallback), propagate, rescue. Set once the node got the image, or when its spread ended without it.",
 		"image", "node", "path",
 	)
 	imageTransferSeconds = metrics.NewRecentGaugeVec(
-		"angryduck_controller_image_transfer_seconds",
+		"adhdduck_controller_image_transfer_seconds",
 		"Seconds a node spent receiving the image, by path, summed over its transfers. Parallel transfers each count. Set with the bytes.",
 		"image", "node", "path",
 	)

@@ -4,15 +4,15 @@ import (
 	"context"
 	"time"
 
-	"angryduck/internal/logging"
-	"angryduck/internal/metrics"
+	"adhdduck/internal/logging"
+	"adhdduck/internal/metrics"
 )
 
 // preheatedContainersRunning is a point-in-time count, sampled once per
 // PreheatMonitor tick, of how many currently-running containers on this
-// node belong to a repo Angry Duck itself preheated onto this node within
+// node belong to a repo ADHD Duck itself preheated onto this node within
 // PREHEAT_ATTRIBUTION_RETENTION_S. It's the closest thing to "how many
-// pods are benefiting from our preheat" Angry Duck can answer without
+// pods are benefiting from our preheat" ADHD Duck can answer without
 // watching every pod's scheduling and pull events in real time (nothing
 // here does that today).
 //
@@ -30,12 +30,12 @@ import (
 // splitting on a preheated/not-preheated bool would double every repo's
 // series for no benefit here).
 var preheatedContainersRunning = metrics.NewGaugeVec(
-	"angryduck_worker_preheated_containers_running",
+	"adhdduck_worker_preheated_containers_running",
 	"Currently-running containers on this node whose image repo was preheated here within the retention window.",
 	"node", "repo",
 )
 
-// PreheatMonitor periodically samples which repos Angry Duck has
+// PreheatMonitor periodically samples which repos ADHD Duck has
 // preheated onto this node are still backing running containers. It
 // deliberately runs on its own, coarser interval than the reporter
 // (PREHEAT_ATTRIBUTION_INTERVAL_S, default 300s): this is a periodic
@@ -66,11 +66,11 @@ func NewPreheatMonitor(runtime Runtime, puller *Puller, interval, retention time
 func (m *PreheatMonitor) Run(ctx context.Context) {
 	ticker := time.NewTicker(m.interval)
 	defer ticker.Stop()
-	logging.Infof("angryduck-worker-preheat-monitor: started — sampling every %s, counting repos preheated here within the last %s", m.interval, m.retention)
+	logging.Infof("adhdduck-worker-preheat-monitor: started — sampling every %s, counting repos preheated here within the last %s", m.interval, m.retention)
 	for {
 		select {
 		case <-ctx.Done():
-			logging.Infof("angryduck-worker-preheat-monitor: stopped")
+			logging.Infof("adhdduck-worker-preheat-monitor: stopped")
 			return
 		case <-ticker.C:
 			m.tick()
@@ -91,7 +91,7 @@ func (m *PreheatMonitor) tick() {
 
 	running, err := m.runtime.RunningImageRepos()
 	if err != nil {
-		logging.Errorf("angryduck-worker-preheat-monitor: could not list running containers, skipping this sample: %v", err)
+		logging.Errorf("adhdduck-worker-preheat-monitor: could not list running containers, skipping this sample: %v", err)
 		return
 	}
 
@@ -105,6 +105,6 @@ func (m *PreheatMonitor) tick() {
 		totalMatched += int64(count)
 		totalRepos++
 	}
-	logging.Debugf("angryduck-worker-preheat-monitor: sampled %d running container(s) across %d preheated repo(s) (of %d repos preheated here within the retention window)",
+	logging.Debugf("adhdduck-worker-preheat-monitor: sampled %d running container(s) across %d preheated repo(s) (of %d repos preheated here within the retention window)",
 		totalMatched, totalRepos, len(preheated))
 }

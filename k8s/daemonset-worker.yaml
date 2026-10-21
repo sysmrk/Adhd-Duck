@@ -1,28 +1,28 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: angryduck-worker
-  namespace: angryduck
+  name: adhdduck-worker
+  namespace: adhdduck
   labels:
-    app.kubernetes.io/name: angryduck
+    app.kubernetes.io/name: adhdduck
     app.kubernetes.io/component: worker
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/name: angryduck
+      app.kubernetes.io/name: adhdduck
       app.kubernetes.io/component: worker
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: angryduck
+        app.kubernetes.io/name: adhdduck
         app.kubernetes.io/component: worker
     spec:
-      serviceAccountName: angryduck-worker
+      serviceAccountName: adhdduck-worker
       automountServiceAccountToken: true
       terminationGracePeriodSeconds: 30
       containers:
         - name: worker
-          image: ghcr.io/hatam-abolghasemi/angry-duck-worker:1.8.15
+          image: ghcr.io/sysmrk/adhd-duck-worker:1.8.15
           env:
             - name: NODE_ID
               valueFrom:
@@ -48,7 +48,7 @@ spec:
               value: "http://$(HOST_IP):9100/metrics"
           envFrom:
             - configMapRef:
-                name: angryduck-config
+                name: adhdduck-config
           ports:
             - containerPort: 18081
               name: http
@@ -56,10 +56,10 @@ spec:
               name: mirror
           volumeMounts:
             - name: registry-creds
-              mountPath: /etc/angryduck/registry-creds
+              mountPath: /etc/adhdduck/registry-creds
               readOnly: true
             - name: rescue-token
-              mountPath: /etc/angryduck/rescue-token
+              mountPath: /etc/adhdduck/rescue-token
               readOnly: true
             - name: containerd-sock
               mountPath: /run/containerd/containerd.sock
@@ -72,7 +72,7 @@ spec:
             - name: containerd-certs
               mountPath: /etc/containerd/certs.d
             - name: state
-              mountPath: /var/lib/angryduck
+              mountPath: /var/lib/adhdduck
           readinessProbe:
             httpGet:
               path: /healthz
@@ -108,7 +108,7 @@ spec:
             optional: true
         - name: rescue-token
           secret:
-            secretName: angryduck-rescue-token
+            secretName: adhdduck-rescue-token
             optional: true
         - name: containerd-sock
           hostPath:
@@ -128,7 +128,7 @@ spec:
             type: DirectoryOrCreate
         - name: state
           hostPath:
-            path: /var/lib/angryduck
+            path: /var/lib/adhdduck
             type: DirectoryOrCreate
       tolerations:
         - operator: Exists

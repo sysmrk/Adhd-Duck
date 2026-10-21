@@ -1,6 +1,6 @@
 # Propagation
 
-Once CI pushes an image, Angry Duck puts it on every eligible node, **blob by
+Once CI pushes an image, ADHD Duck puts it on every eligible node, **blob by
 blob**: every layer starts spreading between
 nodes the moment any node has it, the registry serves each layer about
 once, and no node waits for another to finish a whole image.

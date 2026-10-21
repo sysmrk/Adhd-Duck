@@ -16,6 +16,10 @@ API clients must use the documented schema; previously ignored unknown fields
 are now rejected. Authentication fail-closed is a separate planned change.
 See [input validation](docs/input-validation.md).
 
+## Upstream history
+
+The entries below describe the original Angry Duck releases before this fork.
+
 ## 1.8.15
 
 The blob is the unit everywhere: a node now receives any number of

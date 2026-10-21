@@ -1,4 +1,4 @@
-// Package model holds the wire-format types shared between the Angry Duck
+// Package model holds the wire-format types shared between the ADHD Duck
 // controller and worker processes.
 package model
 
@@ -82,7 +82,7 @@ type ReportAck struct {
 }
 
 // PreheatRequest is the payload the CI/CD pipeline sends right after
-// `docker push`, asking Angry Duck to pre-pull the freshly pushed image onto
+// `docker push`, asking ADHD Duck to pre-pull the freshly pushed image onto
 // some low-utilization nodes ahead of / alongside the GitOps sync.
 type PreheatRequest struct {
 	Image string `json:"image"`

@@ -2,10 +2,10 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: angryduck-webhook
+  name: adhdduck-webhook
   namespace: {{ .Release.Namespace }}
   labels:
-    app.kubernetes.io/name: angryduck
+    app.kubernetes.io/name: adhdduck
     app.kubernetes.io/component: controller
   {{- with .Values.ingress.annotations }}
   annotations:
@@ -21,7 +21,7 @@ spec:
             pathType: Exact
             backend:
               service:
-                name: angryduck-controller
+                name: adhdduck-controller
                 port:
                   number: 8080
 {{- end }}

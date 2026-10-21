@@ -52,7 +52,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CONTAINERD_VERSION: "1.7.27"
-      SOCK: /run/angryduck-ci/containerd.sock
+      SOCK: /run/adhdduck-ci/containerd.sock
     steps:
       - uses: actions/checkout@v4
 
@@ -70,16 +70,16 @@ jobs:
           mkdir -p /tmp/containerd && tar -xzf /tmp/containerd.tgz -C /tmp/containerd
           cat > /tmp/containerd/config.toml <<'EOF'
           version = 2
-          root = "/var/lib/angryduck-ci"
-          state = "/run/angryduck-ci"
+          root = "/var/lib/adhdduck-ci"
+          state = "/run/adhdduck-ci"
           [grpc]
-            address = "/run/angryduck-ci/containerd.sock"
+            address = "/run/adhdduck-ci/containerd.sock"
           [plugins."io.containerd.grpc.v1.cri"]
             disable_apparmor = true
             [plugins."io.containerd.grpc.v1.cri".containerd]
               snapshotter = "overlayfs"
           EOF
-          sudo mkdir -p /var/lib/angryduck-ci /run/angryduck-ci
+          sudo mkdir -p /var/lib/adhdduck-ci /run/adhdduck-ci
           sudo sh -c 'nohup /tmp/containerd/bin/containerd --config /tmp/containerd/config.toml > /tmp/containerd/containerd.log 2>&1 &'
           for i in $(seq 1 30); do
             sudo /tmp/containerd/bin/ctr -a "$SOCK" version >/dev/null 2>&1 && exit 0
@@ -94,7 +94,7 @@ jobs:
       - name: Integration tests
         run: |
           sudo -E env "PATH=$PATH" "HOME=$HOME" "GOPATH=$(go env GOPATH)" "GOCACHE=$(go env GOCACHE)" "GOMODCACHE=$(go env GOMODCACHE)" \
-            ANGRYDUCK_CONTAINERD="$SOCK" \
+            ADHDDUCK_CONTAINERD="$SOCK" \
             go test -tags integration -count=1 -timeout 15m ./internal/worker/
 
       - name: containerd log

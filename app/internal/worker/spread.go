@@ -1,7 +1,7 @@
 package worker
 
 import (
-	"angryduck/internal/httpinput"
+	"adhdduck/internal/httpinput"
 	"bytes"
 	"context"
 	"crypto/sha256"
@@ -18,42 +18,42 @@ import (
 	"sync/atomic"
 	"time"
 
-	"angryduck/internal/blobship"
-	"angryduck/internal/imageref"
-	"angryduck/internal/logging"
-	"angryduck/internal/metrics"
-	"angryduck/internal/model"
-	"angryduck/internal/sharedtoken"
+	"adhdduck/internal/blobship"
+	"adhdduck/internal/imageref"
+	"adhdduck/internal/logging"
+	"adhdduck/internal/metrics"
+	"adhdduck/internal/model"
+	"adhdduck/internal/sharedtoken"
 )
 
 var (
 	spreadTransfersTotal = metrics.NewCounterVec(
-		"angryduck_worker_spread_transfers_total",
+		"adhdduck_worker_spread_transfers_total",
 		"Blobs this node fetched for a spread, by path (registry, peer) and result: ok, failed, or cancelled (the blob arrived by the other path first, or the job was dropped).",
 		"node", "path", "result",
 	)
 	spreadBytesTotal = metrics.NewCounterVec(
-		"angryduck_worker_spread_bytes_total",
+		"adhdduck_worker_spread_bytes_total",
 		"Bytes moved for spreads, by path: registry and peer are received, served is sent to other nodes.",
 		"node", "path",
 	)
 	spreadMillisTotal = metrics.NewCounterVec(
-		"angryduck_worker_spread_transfer_milliseconds_total",
+		"adhdduck_worker_spread_transfer_milliseconds_total",
 		"Time spent on spread transfers, by path (registry, peer). spread_bytes_total / this x 1000 is the average throughput in bytes per second.",
 		"node", "path",
 	)
 	spreadActive = metrics.NewGaugeVec(
-		"angryduck_worker_spread_active",
+		"adhdduck_worker_spread_active",
 		"Blobs this node is fetching right now, by path. Any number of different blobs at once; one blob at most once per path.",
 		"node", "path",
 	)
 	spreadFinalizing = metrics.NewGaugeVec(
-		"angryduck_worker_spread_finalizing",
+		"adhdduck_worker_spread_finalizing",
 		"Images this node is registering (importing and unpacking) right now. Different images run side by side; one image one at a time.",
 		"node",
 	)
 	spreadFinalizesTotal = metrics.NewCounterVec(
-		"angryduck_worker_spread_finalizes_total",
+		"adhdduck_worker_spread_finalizes_total",
 		"Images registered from spread blobs, by result.",
 		"node", "result",
 	)
@@ -297,12 +297,12 @@ func (s *Spread) HandleFetch(w http.ResponseWriter, r *http.Request) {
 func (s *Spread) holdPresent(ctx context.Context, job, dgst string) bool {
 	lease, err := s.lease(ctx, job)
 	if err != nil {
-		logging.Warnf("angryduck-worker[%s]: spread: holding %s: %v (fetching it instead)", s.nodeID, dgst, err)
+		logging.Warnf("adhdduck-worker[%s]: spread: holding %s: %v (fetching it instead)", s.nodeID, dgst, err)
 		return false
 	}
 	held, err := s.store.HoldContent(ctx, lease, dgst)
 	if err != nil {
-		logging.Warnf("angryduck-worker[%s]: spread: holding %s: %v (fetching it instead)", s.nodeID, dgst, err)
+		logging.Warnf("adhdduck-worker[%s]: spread: holding %s: %v (fetching it instead)", s.nodeID, dgst, err)
 		return false
 	}
 	return held
@@ -343,13 +343,13 @@ func (s *Spread) lease(ctx context.Context, job string) (string, error) {
 	defer j.mu.Unlock()
 	switch {
 	case j.lease == "":
-		name := "angryduck-spread-" + job + "-" + s.epoch + "-0"
+		name := "adhdduck-spread-" + job + "-" + s.epoch + "-0"
 		if err := s.store.CreateLease(ctx, name, spreadLeaseTTL); err != nil {
 			return "", fmt.Errorf("creating lease: %w", err)
 		}
 		j.lease, j.leasedAt = name, time.Now()
 	case time.Since(j.leasedAt) > spreadLeaseTTL/2:
-		name := "angryduck-spread-" + job + "-" + s.epoch + "-" + strconv.Itoa(j.gen+1)
+		name := "adhdduck-spread-" + job + "-" + s.epoch + "-" + strconv.Itoa(j.gen+1)
 		if err := s.store.MoveLease(ctx, j.lease, name, spreadLeaseTTL); err != nil {
 			return "", fmt.Errorf("renewing lease: %w", err)
 		}
@@ -400,12 +400,12 @@ func (s *Spread) run(ctx context.Context, x *spreadXfer, o model.SpreadFetch) {
 	}
 	switch result {
 	case model.SpreadResultOK:
-		logging.Infof("angryduck-worker[%s]: spread: got %s (%d bytes) from %s in %s", s.nodeID, o.Digest, n, from, took.Round(time.Millisecond))
+		logging.Infof("adhdduck-worker[%s]: spread: got %s (%d bytes) from %s in %s", s.nodeID, o.Digest, n, from, took.Round(time.Millisecond))
 	case model.SpreadResultCancelled:
-		logging.Debugf("angryduck-worker[%s]: spread: stopped fetching %s from %s after %d bytes: it arrived another way first", s.nodeID, o.Digest, from, n)
+		logging.Debugf("adhdduck-worker[%s]: spread: stopped fetching %s from %s after %d bytes: it arrived another way first", s.nodeID, o.Digest, from, n)
 	default:
 		done.Error = err.Error()
-		logging.Warnf("angryduck-worker[%s]: spread: fetching %s from %s failed after %d bytes: %v", s.nodeID, o.Digest, from, n, err)
+		logging.Warnf("adhdduck-worker[%s]: spread: fetching %s from %s failed after %d bytes: %v", s.nodeID, o.Digest, from, n, err)
 	}
 	s.report(done)
 }
@@ -430,7 +430,7 @@ func (s *Spread) fetch(ctx context.Context, x *spreadXfer, o model.SpreadFetch) 
 	if length >= 0 && length != o.Size {
 		return 0, fmt.Errorf("source announced %d bytes, want %d", length, o.Size)
 	}
-	ref := "angryduck-spread-" + o.Path + "-" + strings.TrimPrefix(o.Digest, "sha256:")
+	ref := "adhdduck-spread-" + o.Path + "-" + strings.TrimPrefix(o.Digest, "sha256:")
 	return s.store.WriteBlob(ctx, lease, ref, o.Digest, o.Size, body)
 }
 
@@ -476,7 +476,7 @@ func (s *Spread) report(done model.SpreadDone) {
 		}
 		time.Sleep(wait)
 	}
-	logging.Warnf("angryduck-worker[%s]: spread: couldn't report %s of %s to the controller", s.nodeID, done.Result, done.Digest)
+	logging.Warnf("adhdduck-worker[%s]: spread: couldn't report %s of %s to the controller", s.nodeID, done.Result, done.Digest)
 }
 
 // HandleContent serves one committed blob by digest to a peer.
@@ -505,7 +505,7 @@ func (s *Spread) HandleContent(w http.ResponseWriter, r *http.Request) {
 	n, err := serveBody(w, body, size)
 	spreadBytesTotal.Add(n, s.nodeID, "served")
 	if err != nil {
-		logging.Warnf("angryduck-worker[%s]: spread: serving %s to %s failed after %d bytes: %v", s.nodeID, dgst, r.RemoteAddr, n, err)
+		logging.Warnf("adhdduck-worker[%s]: spread: serving %s to %s failed after %d bytes: %v", s.nodeID, dgst, r.RemoteAddr, n, err)
 		// Cut the connection: with Content-Length promised, the receiver
 		// sees a short read rather than an error page.
 		panic(http.ErrAbortHandler)
@@ -552,7 +552,7 @@ func (s *Spread) release(ctx context.Context, job string) {
 		return
 	}
 	if err := s.store.DeleteLease(ctx, j.lease); err != nil {
-		logging.Warnf("angryduck-worker[%s]: spread: releasing lease %s: %v (it expires on its own)", s.nodeID, j.lease, err)
+		logging.Warnf("adhdduck-worker[%s]: spread: releasing lease %s: %v (it expires on its own)", s.nodeID, j.lease, err)
 		return
 	}
 	j.lease = ""
@@ -595,7 +595,7 @@ func (s *Spread) HandleFinalize(w http.ResponseWriter, r *http.Request) {
 	err = s.finalize(ctx, f, image)
 	if err != nil {
 		spreadFinalizesTotal.Inc(s.nodeID, "failure")
-		logging.Warnf("angryduck-worker[%s]: spread: registering image=%s failed: %v", s.nodeID, image, err)
+		logging.Warnf("adhdduck-worker[%s]: spread: registering image=%s failed: %v", s.nodeID, image, err)
 		// The controller planned this finalize from an inventory that
 		// turned out wrong: drop cached listings and report again now, so
 		// its retry fetches what is missing instead of finalizing again.
@@ -611,9 +611,9 @@ func (s *Spread) HandleFinalize(w http.ResponseWriter, r *http.Request) {
 	s.release(ctx, f.Job) // the image references its blobs now
 	spreadFinalizesTotal.Inc(s.nodeID, "success")
 	if waited >= 100*time.Millisecond {
-		logging.Infof("angryduck-worker[%s]: spread: image=%s registered in %s (waited %s for another finalize of it)", s.nodeID, image, time.Since(start).Round(time.Millisecond), waited.Round(time.Millisecond))
+		logging.Infof("adhdduck-worker[%s]: spread: image=%s registered in %s (waited %s for another finalize of it)", s.nodeID, image, time.Since(start).Round(time.Millisecond), waited.Round(time.Millisecond))
 	} else {
-		logging.Infof("angryduck-worker[%s]: spread: image=%s registered in %s", s.nodeID, image, time.Since(start).Round(time.Millisecond))
+		logging.Infof("adhdduck-worker[%s]: spread: image=%s registered in %s", s.nodeID, image, time.Since(start).Round(time.Millisecond))
 	}
 	if s.onFinalize != nil {
 		s.onFinalize()
@@ -705,7 +705,7 @@ func (s *Spread) holdLayers(ctx context.Context, f model.SpreadFinalize, top blo
 	layers, err := blobship.LayersFromMetadata(top, f.Metadata, s.platform)
 	if err != nil || len(layers) == 0 {
 		if err != nil {
-			logging.Debugf("angryduck-worker[%s]: spread: image=%s: layers not checked before finalize: %v", s.nodeID, f.Image, err)
+			logging.Debugf("adhdduck-worker[%s]: spread: image=%s: layers not checked before finalize: %v", s.nodeID, f.Image, err)
 		}
 		return nil
 	}

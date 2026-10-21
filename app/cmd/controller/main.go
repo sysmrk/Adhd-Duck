@@ -1,4 +1,4 @@
-// Command angryduck-controller runs the Angry Duck control plane: it
+// Command adhdduck-controller runs the ADHD Duck control plane: it
 // receives the post-`docker push` webhook, tracks worker reports (disk,
 // images, layer inventory), picks as seeds the nodes that already hold the
 // most of the new image, spreads it from them to every node, rescues pods
@@ -16,22 +16,22 @@ import (
 	"syscall"
 	"time"
 
-	"angryduck/internal/config"
-	"angryduck/internal/controller"
-	"angryduck/internal/kube"
-	"angryduck/internal/logging"
-	"angryduck/internal/memlimit"
-	"angryduck/internal/metrics"
-	"angryduck/internal/registryauth"
-	"angryduck/internal/registryclient"
-	"angryduck/internal/sharedtoken"
-	"angryduck/internal/version"
+	"adhdduck/internal/config"
+	"adhdduck/internal/controller"
+	"adhdduck/internal/kube"
+	"adhdduck/internal/logging"
+	"adhdduck/internal/memlimit"
+	"adhdduck/internal/metrics"
+	"adhdduck/internal/registryauth"
+	"adhdduck/internal/registryclient"
+	"adhdduck/internal/sharedtoken"
+	"adhdduck/internal/version"
 )
 
 func main() {
 	envFile := config.String("ENV_FILE", ".env")
 	if err := config.Load(envFile); err != nil {
-		log.Printf("angryduck-controller: warning: failed to load %s: %v", envFile, err)
+		log.Printf("adhdduck-controller: warning: failed to load %s: %v", envFile, err)
 	}
 	if err := config.Validate(); err != nil {
 		log.Fatalf("invalid configuration: %v", err)
@@ -53,11 +53,11 @@ func main() {
 	preferImageLocality := config.Bool("RANK_PREFER_IMAGE_LOCALITY", true)
 	// Same flag, same default, as the worker's METRICS_LABEL_REGISTRY —
 	// both binaries read it from the same ConfigMap so
-	// angryduck_controller_pull_orders_total and the worker-side pull
+	// adhdduck_controller_pull_orders_total and the worker-side pull
 	// metrics turn their registry-host label on or off together.
 	labelRegistry := config.Bool("METRICS_LABEL_REGISTRY", false)
 
-	log.Printf("angryduck-controller: starting: listen=%s stale_after=%s target_ttl=%s rank_interval=%s top_n=%d rank_exclude_node_substrings=%v rank_prefer_image_locality=%v metrics_label_registry=%v",
+	log.Printf("adhdduck-controller: starting: listen=%s stale_after=%s target_ttl=%s rank_interval=%s top_n=%d rank_exclude_node_substrings=%v rank_prefer_image_locality=%v metrics_label_registry=%v",
 		listenAddr, staleAfter, targetTTL, rankInterval, topN, excludeNodeSubstrings, preferImageLocality, labelRegistry)
 
 	registry := controller.NewRegistry(staleAfter, targetTTL)
@@ -66,20 +66,20 @@ func main() {
 	server := controller.NewServer(registry, ranker)
 	authMode, err := sharedtoken.ParseMode(config.String("AUTH_MODE", ""))
 	if err != nil {
-		log.Fatalf("angryduck-controller: %v", err)
+		log.Fatalf("adhdduck-controller: %v", err)
 	}
 	server.SetAuthMode(authMode)
-	webhookTokenPath := config.String("WEBHOOK_TOKEN_PATH", "/etc/angryduck/webhook-token/token")
+	webhookTokenPath := config.String("WEBHOOK_TOKEN_PATH", "/etc/adhdduck/webhook-token/token")
 	switch wt, err := sharedtoken.Load(webhookTokenPath); {
 	case err == nil:
 		server.SetWebhookToken(wt)
-		log.Printf("angryduck-controller: /webhook/preheat requires the webhook token from %s", webhookTokenPath)
+		log.Printf("adhdduck-controller: /webhook/preheat requires the webhook token from %s", webhookTokenPath)
 	case webhookTokenPath == "" || errors.Is(err, fs.ErrNotExist):
-		log.Printf("angryduck-controller: WARNING: no webhook token at %q: /webhook/preheat is unauthenticated", webhookTokenPath)
+		log.Printf("adhdduck-controller: WARNING: no webhook token at %q: /webhook/preheat is unauthenticated", webhookTokenPath)
 	default:
 		// A token that exists but is unusable is a mistake, not a choice
 		// to run open.
-		log.Fatalf("angryduck-controller: webhook token: %v", err)
+		log.Fatalf("adhdduck-controller: webhook token: %v", err)
 	}
 
 	// Layer ranking reads each pushed image's manifest and config from its
@@ -91,27 +91,27 @@ func main() {
 	credsPath := config.String("REGISTRY_CREDENTIALS_PATH", "")
 	creds, err := registryauth.Load(credsPath)
 	if err != nil {
-		log.Printf("angryduck-controller: WARNING: registry credentials from %s unusable, resolving anonymously: %v", credsPath, err)
+		log.Printf("adhdduck-controller: WARNING: registry credentials from %s unusable, resolving anonymously: %v", credsPath, err)
 		creds = registryauth.Empty()
 	}
 	if config.Bool("RANK_BY_LAYERS", true) {
 		regClient = registryclient.New(creds, config.Duration("RANK_RESOLVE_TIMEOUT_S", 5), config.Duration("RANK_RESOLVE_CACHE_S", 600))
 		resolver = regClient
 		ranker.SetLayerResolver(resolver, platform, config.Duration("RANK_RESOLVE_TIMEOUT_S", 5))
-		log.Printf("angryduck-controller: layer ranking on: platform=%s credentials for %d registr(y/ies)", platform, creds.Count())
+		log.Printf("adhdduck-controller: layer ranking on: platform=%s credentials for %d registr(y/ies)", platform, creds.Count())
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	// Rescue and propagation both order workers to copy images from each
 	// other, and the workers only accept that with the shared token.
-	token, tokenErr := sharedtoken.Load(config.String("RESCUE_TOKEN_PATH", "/etc/angryduck/rescue-token/token"))
+	token, tokenErr := sharedtoken.Load(config.String("RESCUE_TOKEN_PATH", "/etc/adhdduck/rescue-token/token"))
 	if tokenErr != nil {
-		log.Printf("angryduck-controller: WARNING: no usable rescue token, so rescue and propagation are off: %v", tokenErr)
+		log.Printf("adhdduck-controller: WARNING: no usable rescue token, so rescue and propagation are off: %v", tokenErr)
 	} else {
 		server.SetToken(token)
 		ranker.SetToken(token)
-		log.Printf("angryduck-controller: /report requires the shared token (AUTH_MODE=%s)", authMode)
+		log.Printf("adhdduck-controller: /report requires the shared token (AUTH_MODE=%s)", authMode)
 		rescuer, pods := newRescuer(registry, token)
 		if rescuer != nil {
 			if resolver != nil {
@@ -151,7 +151,7 @@ func main() {
 		})
 		go origin.Run(ctx)
 	} else {
-		log.Println("angryduck-controller: origin check disabled (ORIGIN_CHECK_INTERVAL_S=0)")
+		log.Println("adhdduck-controller: origin check disabled (ORIGIN_CHECK_INTERVAL_S=0)")
 	}
 
 	metrics.PublishBuildInfo("controller", version.Version, config.String("NODE_NAME", ""))
@@ -167,14 +167,14 @@ func main() {
 
 	go func() {
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("angryduck-controller: http server failed: %v", err)
+			log.Fatalf("adhdduck-controller: http server failed: %v", err)
 		}
 	}()
 
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 	<-sigCh
-	log.Println("angryduck-controller: shutting down")
+	log.Println("adhdduck-controller: shutting down")
 
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer shutdownCancel()
@@ -188,12 +188,12 @@ func main() {
 // shared token the workers check.
 func newRescuer(registry *controller.Registry, token string) (*controller.Rescuer, *kube.PodWatch) {
 	if !config.Bool("RESCUE_ENABLED", true) {
-		log.Println("angryduck-controller: rescue disabled (RESCUE_ENABLED=false)")
+		log.Println("adhdduck-controller: rescue disabled (RESCUE_ENABLED=false)")
 		return nil, nil
 	}
 	api, err := kube.InCluster()
 	if err != nil {
-		log.Printf("angryduck-controller: WARNING: rescue disabled, no Kubernetes API access: %v", err)
+		log.Printf("adhdduck-controller: WARNING: rescue disabled, no Kubernetes API access: %v", err)
 		return nil, nil
 	}
 	cfg := controller.RescuerConfig{
@@ -221,7 +221,7 @@ func newRescuer(registry *controller.Registry, token string) (*controller.Rescue
 // from peers, or returns nil when it's turned off.
 func newPropagator(registry *controller.Registry, token string, rankExclude []string, platform string) *controller.Propagator {
 	if !config.Bool("PROPAGATE_ENABLED", true) {
-		log.Println("angryduck-controller: propagation disabled (PROPAGATE_ENABLED=false)")
+		log.Println("adhdduck-controller: propagation disabled (PROPAGATE_ENABLED=false)")
 		return nil
 	}
 	cfg := controller.PropagatorConfig{
@@ -251,11 +251,11 @@ func newPropagator(registry *controller.Registry, token string, rankExclude []st
 // images and propagation spreads them.
 func newSpreader(registry *controller.Registry, rc *registryclient.Client, token string, rankExclude []string, platform string, topN int) *controller.Spreader {
 	if !config.Bool("SPREAD_ENABLED", true) {
-		log.Println("angryduck-controller: blob-by-blob spreading disabled (SPREAD_ENABLED=false): seeding and propagating whole images")
+		log.Println("adhdduck-controller: blob-by-blob spreading disabled (SPREAD_ENABLED=false): seeding and propagating whole images")
 		return nil
 	}
 	if rc == nil {
-		log.Println("angryduck-controller: blob-by-blob spreading needs RANK_BY_LAYERS=true: seeding and propagating whole images")
+		log.Println("adhdduck-controller: blob-by-blob spreading needs RANK_BY_LAYERS=true: seeding and propagating whole images")
 		return nil
 	}
 	cfg := controller.SpreaderConfig{

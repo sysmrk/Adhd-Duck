@@ -14,7 +14,7 @@ writes a `hosts.toml` for each registry the node has images from, plus
 `MIRROR_REGISTRIES`:
 
 ```toml
-# managed by angryduck: ...
+# managed by adhdduck: ...
 server = "https://registry.example.com"
 
 [host."http://10.233.64.7:18082"]
@@ -66,10 +66,10 @@ containerd verifies every digest, so a peer can't slip in different content.
 - **Blobs only.** Peers that hold only snapshots (nodes with
   `discard_unpacked_layers = true`) can't serve mirror requests; containerd
   then uses the registry.
-- **Hands off your files.** Only files starting with `# managed by angryduck`
+- **Hands off your files.** Only files starting with `# managed by adhdduck`
   are written or removed. A registry that already has a hand-written
   `hosts.toml`, such as an insecure internal registry, is left alone and
-  logged. Setting `MIRROR_ENABLED=false` removes Angry Duck's files on the
+  logged. Setting `MIRROR_ENABLED=false` removes ADHD Duck's files on the
   next worker start.
 
 ## Requirements
@@ -95,9 +95,9 @@ it.
 
 | Metric | Meaning |
 |---|---|
-| `angryduck_worker_mirror_requests_total{kind, result}` | Requests served `local`, from a `peer`, a `miss` (registry), or `error`. |
-| `angryduck_worker_mirror_bytes_total{source}` | Bytes served, each one not downloaded from the registry. |
-| `angryduck_worker_mirror_peer_served_bytes_total` | Bytes this node served to other nodes' mirrors. |
+| `adhdduck_worker_mirror_requests_total{kind, result}` | Requests served `local`, from a `peer`, a `miss` (registry), or `error`. |
+| `adhdduck_worker_mirror_bytes_total{source}` | Bytes served, each one not downloaded from the registry. |
+| `adhdduck_worker_mirror_peer_served_bytes_total` | Bytes this node served to other nodes' mirrors. |
 
 ## Settings
 

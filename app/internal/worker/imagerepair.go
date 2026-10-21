@@ -1,7 +1,7 @@
 package worker
 
 import (
-	"angryduck/internal/httpinput"
+	"adhdduck/internal/httpinput"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -18,56 +18,56 @@ import (
 	"sync"
 	"time"
 
-	"angryduck/internal/blobship"
-	"angryduck/internal/imageref"
-	"angryduck/internal/logging"
-	"angryduck/internal/metrics"
-	"angryduck/internal/model"
-	"angryduck/internal/sharedtoken"
+	"adhdduck/internal/blobship"
+	"adhdduck/internal/imageref"
+	"adhdduck/internal/logging"
+	"adhdduck/internal/metrics"
+	"adhdduck/internal/model"
+	"adhdduck/internal/sharedtoken"
 )
 
 var (
 	brokenImageGauge = metrics.NewGaugeVec(
-		"angryduck_worker_broken_image",
+		"adhdduck_worker_broken_image",
 		"1 while this image is registered on the node but can't start a container (a metadata blob, or a layer that is neither unpacked nor here, is gone or unusable). kubelet calls such an image present and never pulls it. The series is removed once the image is repaired or no longer registered.",
 		"node", "image",
 	)
 	imageRepairsTotal = metrics.NewCounterVec(
-		"angryduck_worker_image_repairs_total",
+		"adhdduck_worker_image_repairs_total",
 		"Repairs of broken images, by result: repaired (the image can start containers again, nothing was removed), failed (some missing piece came from no peer and not from the registry either; retried at the next check).",
 		"node", "result",
 	)
 	imageRepairSeconds = metrics.NewRecentGaugeVec(
-		"angryduck_worker_image_repair_seconds",
+		"adhdduck_worker_image_repair_seconds",
 		"How long a repair of the image took, by result: repaired, failed. An event, shown for METRICS_EVENT_TTL_S.",
 		"node", "image", "result",
 	)
 	imageRepairedAt = metrics.NewRecentGaugeVec(
-		"angryduck_worker_image_repair_timestamp_seconds",
+		"adhdduck_worker_image_repair_timestamp_seconds",
 		"When a repair of the image ended, as Unix time, by result. An event, shown for METRICS_EVENT_TTL_S.",
 		"node", "image", "result",
 	)
 	imageRepairBytes = metrics.NewRecentGaugeVec(
-		"angryduck_worker_image_repair_bytes",
+		"adhdduck_worker_image_repair_bytes",
 		"Bytes a repair of the image fetched, by source: peer, registry. An event, shown for METRICS_EVENT_TTL_S.",
 		"node", "image", "source",
 	)
 	repairBytesTotal = metrics.NewCounterVec(
-		"angryduck_worker_repair_bytes_total",
+		"adhdduck_worker_repair_bytes_total",
 		"Bytes the repair fetched, by source: peer (another node) or registry.",
 		"node", "source",
 	)
 	tempImagesRemovedTotal = metrics.NewCounterVec(
-		"angryduck_worker_temp_images_removed_total",
+		"adhdduck_worker_temp_images_removed_total",
 		"Temporary image names an earlier import left behind (a worker killed mid-import), removed by the repair.",
 		"node",
 	)
 )
 
-// tempImageHost is the registry host of every image name Angry Duck makes
+// tempImageHost is the registry host of every image name ADHD Duck makes
 // up for itself: rescue base images and the names imports unpack under.
 // They are never reported, cleaned up by the image cleanup, or repaired.
-const tempImageHost = "angryduck.local/"
+const tempImageHost = "adhdduck.local/"
 
 // RepairStore is what the repair needs from containerd. ContainerdStore
 // has it.
@@ -96,7 +96,7 @@ type RepairRegistry interface {
 //
 // Such an image is the worst kind of missing: kubelet sees it as present
 // ("already present on machine"), never pulls it, and every container
-// create fails; Angry Duck's controller would count the node as holding
+// create fails; ADHD Duck's controller would count the node as holding
 // it, so while it is broken the worker leaves it out of its reports (see
 // Broken).
 //
@@ -189,7 +189,7 @@ func (r *ImageRepair) UsePeers(token, controllerURL string) {
 // Run checks every interval until ctx is done, the first time shortly
 // after startup, and handles wakes as they come.
 func (r *ImageRepair) Run(ctx context.Context) {
-	logging.Infof("angryduck-worker[%s]: image repair started: interval=%s platform=%s", r.nodeID, r.interval, r.platform)
+	logging.Infof("adhdduck-worker[%s]: image repair started: interval=%s platform=%s", r.nodeID, r.interval, r.platform)
 	first := 30 * time.Second
 	if r.interval < first {
 		first = r.interval
@@ -272,7 +272,7 @@ func (r *ImageRepair) handleWakes(ctx context.Context) {
 	defer r.mu.Unlock()
 	targets, err := r.store.ImageTargets(ctx)
 	if err != nil {
-		logging.Warnf("angryduck-worker[%s]: image repair: listing images: %v", r.nodeID, err)
+		logging.Warnf("adhdduck-worker[%s]: image repair: listing images: %v", r.nodeID, err)
 		return
 	}
 	byTarget := groupByTarget(targets)
@@ -291,7 +291,7 @@ func (r *ImageRepair) Pass(ctx context.Context) {
 	defer r.mu.Unlock()
 	targets, err := r.store.ImageTargets(ctx)
 	if err != nil {
-		logging.Warnf("angryduck-worker[%s]: image repair: listing images: %v", r.nodeID, err)
+		logging.Warnf("adhdduck-worker[%s]: image repair: listing images: %v", r.nodeID, err)
 		return
 	}
 	changed := r.removeStaleTemps(ctx, targets)
@@ -306,12 +306,12 @@ func (r *ImageRepair) Pass(ctx context.Context) {
 	// rest of the worker): images checked before cost no call of their own.
 	blobs, err := r.store.Digests(ctx)
 	if err != nil {
-		logging.Warnf("angryduck-worker[%s]: image repair: listing content: %v", r.nodeID, err)
+		logging.Warnf("adhdduck-worker[%s]: image repair: listing content: %v", r.nodeID, err)
 		return
 	}
 	snaps, err := r.store.Snapshots(ctx)
 	if err != nil {
-		logging.Warnf("angryduck-worker[%s]: image repair: listing snapshots: %v", r.nodeID, err)
+		logging.Warnf("adhdduck-worker[%s]: image repair: listing snapshots: %v", r.nodeID, err)
 		return
 	}
 	seen := map[string]bool{}
@@ -385,7 +385,7 @@ func (k knownImage) check(blobs, snaps map[string]bool) (blobship.Health, bool) 
 }
 
 // groupByTarget maps each target digest to its names, sorted, without
-// Angry Duck's own temporary ones.
+// ADHD Duck's own temporary ones.
 func groupByTarget(targets map[string]string) map[string][]string {
 	out := map[string][]string{}
 	for name, d := range targets {
@@ -462,14 +462,14 @@ func (r *ImageRepair) repair(ctx context.Context, digest string, names []string,
 	}
 	r.setBroken(digest, names)
 	if r.busy(names) {
-		logging.Infof("angryduck-worker[%s]: image repair: image=%s is being pulled or received; checking again later", r.nodeID, name)
+		logging.Infof("adhdduck-worker[%s]: image repair: image=%s is being pulled or received; checking again later", r.nodeID, name)
 		return
 	}
 	what := h.String()
 	if len(corrupt) > 0 {
 		what += fmt.Sprintf("; %d layer(s) failed to unpack", len(corrupt))
 	}
-	logging.Warnf("angryduck-worker[%s]: image repair: image=%s can't start containers (%s): repairing it in place", r.nodeID, name, what)
+	logging.Warnf("adhdduck-worker[%s]: image repair: image=%s can't start containers (%s): repairing it in place", r.nodeID, name, what)
 	start := time.Now()
 	res, err := r.fix(ctx, name, corrupt)
 	if err == nil {
@@ -494,12 +494,12 @@ func (r *ImageRepair) repair(ctx context.Context, digest string, names []string,
 	}
 	if err != nil {
 		imageRepairsTotal.Inc(r.nodeID, "failed")
-		logging.Warnf("angryduck-worker[%s]: image repair: image=%s not repaired: %v (it stays as it is; trying again at the next check)", r.nodeID, name, err)
+		logging.Warnf("adhdduck-worker[%s]: image repair: image=%s not repaired: %v (it stays as it is; trying again at the next check)", r.nodeID, name, err)
 		return
 	}
 	imageRepairsTotal.Inc(r.nodeID, "repaired")
 	r.setFine(digest)
-	logging.Infof("angryduck-worker[%s]: image repair: image=%s repaired in %s: %s", r.nodeID, name, time.Since(start).Round(time.Millisecond), res)
+	logging.Infof("adhdduck-worker[%s]: image repair: image=%s repaired in %s: %s", r.nodeID, name, time.Since(start).Round(time.Millisecond), res)
 	if r.onChange != nil {
 		r.onChange()
 	}
@@ -523,14 +523,14 @@ func (r *ImageRepair) fix(ctx context.Context, image string, corrupt map[string]
 	if err != nil {
 		return res, err
 	}
-	lease := "angryduck-repair-" + randomSuffix()
+	lease := "adhdduck-repair-" + randomSuffix()
 	if err := r.store.CreateLease(ctx, lease, time.Hour); err != nil {
 		return res, fmt.Errorf("creating lease: %w", err)
 	}
 	defer func() {
 		dctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
 		if err := r.store.DeleteLease(dctx, lease); err != nil {
-			logging.Debugf("angryduck-worker[%s]: image repair: deleting lease %s: %v (it expires on its own)", r.nodeID, lease, err)
+			logging.Debugf("adhdduck-worker[%s]: image repair: deleting lease %s: %v (it expires on its own)", r.nodeID, lease, err)
 		}
 		cancel()
 	}()
@@ -567,7 +567,7 @@ func (r *ImageRepair) fix(ctx context.Context, image string, corrupt map[string]
 		walk, err = blobship.WalkMetadata(top, r.platform, read)
 		var mp *blobship.MetaProblem
 		if round < 4 && errors.As(err, &mp) && mp.Corrupt && local[mp.Blob.Digest] {
-			logging.Warnf("angryduck-worker[%s]: image repair: image=%s: removing unusable %s %s to fetch it again", r.nodeID, image, mp.Kind, mp.Blob.Digest)
+			logging.Warnf("adhdduck-worker[%s]: image repair: image=%s: removing unusable %s %s to fetch it again", r.nodeID, image, mp.Kind, mp.Blob.Digest)
 			if err := r.store.DeleteContent(ctx, mp.Blob.Digest); err != nil {
 				return res, fmt.Errorf("removing unusable %s %s: %w", mp.Kind, mp.Blob.Digest, err)
 			}
@@ -598,7 +598,7 @@ func (r *ImageRepair) fix(ctx context.Context, image string, corrupt map[string]
 		for i := unpacked + 1; i < len(layers); i++ {
 			l := layers[i]
 			if corrupt[l.DiffID] {
-				logging.Warnf("angryduck-worker[%s]: image repair: image=%s: removing layer blob %s, which failed to unpack, to fetch it again", r.nodeID, image, l.Blob.Digest)
+				logging.Warnf("adhdduck-worker[%s]: image repair: image=%s: removing layer blob %s, which failed to unpack, to fetch it again", r.nodeID, image, l.Blob.Digest)
 				if err := r.store.DeleteContent(ctx, l.Blob.Digest); err != nil {
 					return res, fmt.Errorf("removing corrupted layer blob %s: %w", l.Blob.Digest, err)
 				}
@@ -726,7 +726,7 @@ func (r *ImageRepair) fetchMeta(ctx context.Context, image string, d blobship.De
 // writes, so a bad copy fails and the next source is tried.
 func (r *ImageRepair) fetchBlob(ctx context.Context, lease, image string, d blobship.Descriptor) (int64, string, error) {
 	var errs []string
-	ref := "angryduck-repair-" + strings.TrimPrefix(d.Digest, "sha256:")
+	ref := "adhdduck-repair-" + strings.TrimPrefix(d.Digest, "sha256:")
 	write := func(body io.ReadCloser, length int64) (int64, error) {
 		defer body.Close()
 		if length >= 0 && length != d.Size {
@@ -781,7 +781,7 @@ func (r *ImageRepair) holders(ctx context.Context, digest string) []model.Holder
 	sharedtoken.Set(req, r.token)
 	resp, err := r.ctl.Do(req)
 	if err != nil {
-		logging.Debugf("angryduck-worker[%s]: image repair: asking the controller for holders of %s: %v", r.nodeID, digest, err)
+		logging.Debugf("adhdduck-worker[%s]: image repair: asking the controller for holders of %s: %v", r.nodeID, digest, err)
 		return nil
 	}
 	defer resp.Body.Close()
@@ -853,10 +853,10 @@ func (r *ImageRepair) removeStaleTemps(ctx context.Context, targets map[string]s
 	}
 	sort.Strings(stale)
 	if err := r.store.DeleteImages(ctx, stale...); err != nil {
-		logging.Warnf("angryduck-worker[%s]: image repair: removing leftover temporary images %v: %v", r.nodeID, stale, err)
+		logging.Warnf("adhdduck-worker[%s]: image repair: removing leftover temporary images %v: %v", r.nodeID, stale, err)
 		return false
 	}
 	tempImagesRemovedTotal.Add(int64(len(stale)), r.nodeID)
-	logging.Infof("angryduck-worker[%s]: image repair: removed %d leftover temporary image name(s) of an interrupted import", r.nodeID, len(stale))
+	logging.Infof("adhdduck-worker[%s]: image repair: removed %d leftover temporary image name(s) of an interrupted import", r.nodeID, len(stale))
 	return true
 }

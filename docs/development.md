@@ -23,7 +23,7 @@ app/
     ├── config/            .env loader and typed getters
     └── model/             wire types shared by both binaries
 helm/
-└── angryduck/             Helm chart, the same objects as k8s/
+└── adhdduck/             Helm chart, the same objects as k8s/
 k8s/                       example Kubernetes manifests
 grafana/                   Grafana dashboard
 docs/                      documentation
@@ -37,8 +37,8 @@ the complete dependency list is maintained in `app/go.mod` and `app/go.sum`.
 ```bash
 cd app
 go build ./cmd/controller ./cmd/worker
-docker build -t angry-duck-controller:dev -f Dockerfile.controller .
-docker build -t angry-duck-worker:dev -f Dockerfile.worker .
+docker build -t adhd-duck-controller:dev -f Dockerfile.controller .
+docker build -t adhd-duck-worker:dev -f Dockerfile.worker .
 ```
 
 Both images are single static binaries on a distroless base.
@@ -55,7 +55,7 @@ cd app && go test -race ./...
   root, with the `integration` build tag:
 
   ```sh
-  ANGRYDUCK_CONTAINERD=/run/containerd/containerd.sock \
+  ADHDDUCK_CONTAINERD=/run/containerd/containerd.sock \
     go test -tags integration ./internal/worker/
   ```
 
@@ -63,12 +63,12 @@ cd app && go test -race ./...
   and without the content store mounted), rescue to and from a pre-1.8.6
   worker (with its exact `tar` commands), and
   CRI pulls from a test registry, and compare the resulting file trees
-  (contents, owners, modes, links, xattrs). With `ANGRYDUCK_NO_MOUNT=1` they
+  (contents, owners, modes, links, xattrs). With `ADHDDUCK_NO_MOUNT=1` they
   skip the tree comparison, so they can run with every capability dropped:
 
   ```sh
   go test -tags integration -c -o worker.test ./internal/worker/
-  ANGRYDUCK_CONTAINERD=/run/containerd/containerd.sock ANGRYDUCK_NO_MOUNT=1 \
+  ADHDDUCK_CONTAINERD=/run/containerd/containerd.sock ADHDDUCK_NO_MOUNT=1 \
     setpriv --bounding-set=-all --inh-caps=-all -- ./worker.test -test.run 'StoreBasics|RescueShipsSnapshot|CRI'
   ```
 
@@ -76,22 +76,22 @@ cd app && go test -race ./...
   environment so a run fits the machine:
 
   ```sh
-  ANGRYDUCK_CONTAINERD=/run/containerd/containerd.sock \
-  ANGRYDUCK_BENCH_BASE_MB=300 ANGRYDUCK_BENCH_APP_MB=150 \
+  ADHDDUCK_CONTAINERD=/run/containerd/containerd.sock \
+  ADHDDUCK_BENCH_BASE_MB=300 ADHDDUCK_BENCH_APP_MB=150 \
     go test -tags integration -run TestBench -v ./internal/worker/
   ```
 
 ## Helm chart
 
 ```bash
-helm lint helm/angryduck
-helm template angryduck helm/angryduck -n angryduck
-helm template angryduck helm/angryduck -n angryduck -f helm/angryduck/values-stg.yaml
+helm lint helm/adhdduck
+helm template adhdduck helm/adhdduck -n adhdduck
+helm template adhdduck helm/adhdduck -n adhdduck -f helm/adhdduck/values-stg.yaml
 ```
 
 The default render must match `k8s/` object for object, apart from the
 Namespace. Change both together. Keep `version` and `appVersion` in
-`helm/angryduck/Chart.yaml` equal to the release.
+`helm/adhdduck/Chart.yaml` equal to the release.
 
 ## Running locally
 
@@ -103,7 +103,7 @@ containerd and node-exporter.
 
 The Grafana dashboard is plain JSON. Import it, edit it in Grafana, then export
 it with **Share → Export → Save to file** with *Export for sharing externally*
-enabled, and replace `grafana/angryduck-dashboard.json`.
+enabled, and replace `grafana/adhdduck-dashboard.json`.
 
 ## CI and releases
 
@@ -115,9 +115,9 @@ GitHub Actions run two workflows from `.github/workflows/`:
   (the release binaries of the version the nodes run, started next to the
   runner's own, overlayfs and CRI).
 - **Release** (`release.yml`), on a pushed `vX.Y.Z` tag: checks that the tag,
-  `helm/angryduck/Chart.yaml`'s `appVersion`, the image tags in `k8s/` and a
+  `helm/adhdduck/Chart.yaml`'s `appVersion`, the image tags in `k8s/` and a
   `## X.Y.Z` section of `CHANGELOG.md` all agree, builds and pushes
-  `ghcr.io/<owner>/angry-duck-controller` and `angry-duck-worker` as `X.Y.Z`
+  `ghcr.io/<owner>/adhd-duck-controller` and `adhd-duck-worker` as `X.Y.Z`
   and `latest`, then publishes the GitHub release with that changelog section
   as its notes. It can be re-run for an existing tag from the Actions tab.
 
@@ -125,5 +125,5 @@ To release: bump the version in `Chart.yaml`, `k8s/` and `docs/`, add the
 `CHANGELOG.md` section, merge, then:
 
 ```bash
-git tag -a vX.Y.Z -m "Angry Duck X.Y.Z" && git push origin vX.Y.Z
+git tag -a vX.Y.Z -m "ADHD Duck X.Y.Z" && git push origin vX.Y.Z
 ```

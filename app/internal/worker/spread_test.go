@@ -16,7 +16,7 @@ import (
 	"testing"
 	"time"
 
-	"angryduck/internal/model"
+	"adhdduck/internal/model"
 )
 
 const spreadToken = "0123456789abcdef0123456789abcdef"
@@ -281,7 +281,7 @@ func TestSpreadFetchesFromRegistryUnderTheJobLeaseAndReports(t *testing.T) {
 		t.Fatalf("status %d", resp.StatusCode)
 	}
 	sp.wg.Wait()
-	if !store.leases["angryduck-spread-s1-"+sp.epoch+"-0"][d] {
+	if !store.leases["adhdduck-spread-s1-"+sp.epoch+"-0"][d] {
 		t.Fatalf("blob not held by the job's lease: %v", store.leases)
 	}
 	if got := ctl.byPath()[model.SpreadPathRegistry]; got != model.SpreadResultOK {
@@ -432,7 +432,7 @@ func TestSpreadDropCancelsAndReleasesAndLeasesRenew(t *testing.T) {
 	if _, err := sp.lease(context.Background(), "s1"); err != nil {
 		t.Fatal(err)
 	}
-	if store.leases["angryduck-spread-s1-"+sp.epoch+"-1"] == nil || store.leases["angryduck-spread-s1-"+sp.epoch+"-0"] != nil {
+	if store.leases["adhdduck-spread-s1-"+sp.epoch+"-1"] == nil || store.leases["adhdduck-spread-s1-"+sp.epoch+"-0"] != nil {
 		t.Fatalf("lease not renewed: %v", store.leases)
 	}
 	if resp := postSpread(t, srv, "/spread/drop", model.SpreadDrop{Job: "s1"}); resp.StatusCode != http.StatusNoContent {

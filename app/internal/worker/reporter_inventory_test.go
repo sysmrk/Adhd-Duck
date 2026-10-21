@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"angryduck/internal/model"
+	"adhdduck/internal/model"
 )
 
 // flakyRuntime fails LocalImages while fail is set.

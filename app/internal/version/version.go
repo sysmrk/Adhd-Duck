@@ -1,4 +1,4 @@
-// Package version holds Angry Duck's release version, bumped with every
+// Package version holds ADHD Duck's release version, bumped with every
 // release alongside the chart and the manifests.
 package version
 

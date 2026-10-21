@@ -1,21 +1,21 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: angryduck-webhook
-  namespace: angryduck
+  name: adhdduck-webhook
+  namespace: adhdduck
   labels:
-    app.kubernetes.io/name: angryduck
+    app.kubernetes.io/name: adhdduck
     app.kubernetes.io/component: controller
 spec:
   ingressClassName: nginx
   rules:
-    - host: angryduck.example.com
+    - host: adhdduck.example.com
       http:
         paths:
           - path: /webhook/preheat
             pathType: Exact
             backend:
               service:
-                name: angryduck-controller
+                name: adhdduck-controller
                 port:
                   number: 8080

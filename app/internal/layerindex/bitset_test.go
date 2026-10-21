@@ -1,7 +1,7 @@
 package layerindex
 
 import (
-	"angryduck/internal/model"
+	"adhdduck/internal/model"
 	"fmt"
 	"math/rand"
 	"sort"

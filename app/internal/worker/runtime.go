@@ -8,11 +8,11 @@ import (
 	"google.golang.org/grpc"
 	runtimeapi "k8s.io/cri-api/pkg/apis/runtime/v1"
 
-	"angryduck/internal/imageref"
-	"angryduck/internal/registryauth"
+	"adhdduck/internal/imageref"
+	"adhdduck/internal/registryauth"
 )
 
-// Runtime is the minimal container-runtime interface Angry Duck needs on
+// Runtime is the minimal container-runtime interface ADHD Duck needs on
 // each node: pull an image, list images present locally, and list images
 // currently backing a running container.
 //
@@ -20,7 +20,7 @@ import (
 // rest of the worker's containerd calls: the calls `crictl pull`, `crictl
 // images` and `crictl ps` make, without running crictl. A seed pull is
 // therefore exactly the pull kubelet would make, honoring the node's
-// registry config (hosts.toml, mirrors, the Angry Duck mirror included).
+// registry config (hosts.toml, mirrors, the ADHD Duck mirror included).
 //
 // Responses are mapped onto the same shapes `crictl -o json` printed, so
 // the parsing below (and its tests) is unchanged. Correct parsing matters

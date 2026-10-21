@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
-	"angryduck/internal/blobship"
-	"angryduck/internal/registryauth"
+	"adhdduck/internal/blobship"
+	"adhdduck/internal/registryauth"
 )
 
 func dig(b []byte) string {

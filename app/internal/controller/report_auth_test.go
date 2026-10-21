@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"angryduck/internal/model"
+	"adhdduck/internal/model"
 )
 
 const testToken = "0123456789abcdef0123456789abcdef"

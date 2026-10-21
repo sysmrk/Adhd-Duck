@@ -1,5 +1,5 @@
 // Package config provides a minimal, dependency-free .env loader plus typed
-// accessors with sane defaults. Every tunable in the Angry Duck design doc
+// accessors with sane defaults. Every tunable in the ADHD Duck design doc
 // (intervals, thresholds, top-N, grace periods, ...) is read through here so
 // it can all live in one .env file.
 package config

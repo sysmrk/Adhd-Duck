@@ -24,7 +24,7 @@ import (
 	"strings"
 	"sync"
 
-	"angryduck/internal/model"
+	"adhdduck/internal/model"
 )
 
 type key [32]byte

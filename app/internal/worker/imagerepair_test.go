@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
-	"angryduck/internal/blobship"
-	"angryduck/internal/model"
+	"adhdduck/internal/blobship"
+	"adhdduck/internal/model"
 )
 
 // breakImage leaves name registered but impossible to unpack, the way a
@@ -348,7 +348,7 @@ func TestImageRepair_LeavesABusyImage(t *testing.T) {
 	}
 }
 
-func TestImageRepair_IgnoresAngryDucksOwnNames(t *testing.T) {
+func TestImageRepair_IgnoresADHDDucksOwnNames(t *testing.T) {
 	store := newRepairStore()
 	ti := store.AddTestImage(baseImagePrefix+"x:layers-0-1", "base", "app")
 	breakImage(store.MemStore, ti)

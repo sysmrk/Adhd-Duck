@@ -28,7 +28,7 @@ func TestPreheatMonitorTickCountsOnlyPreheatedRepos(t *testing.T) {
 	m.tick()
 
 	out := scrapeMetrics(t)
-	want := `angryduck_worker_preheated_containers_running{node="` + nodeID + `",repo="docker.io/library/nginx"} 2`
+	want := `adhdduck_worker_preheated_containers_running{node="` + nodeID + `",repo="docker.io/library/nginx"} 2`
 	if !strings.Contains(out, want) {
 		t.Errorf("expected %q in output, got:\n%s", want, out)
 	}
@@ -52,7 +52,7 @@ func TestPreheatMonitorTickResetsWhenNothingPreheated(t *testing.T) {
 	m.tick()
 
 	out := scrapeMetrics(t)
-	if strings.Contains(out, `angryduck_worker_preheated_containers_running{node="`+nodeID+`"`) {
+	if strings.Contains(out, `adhdduck_worker_preheated_containers_running{node="`+nodeID+`"`) {
 		t.Errorf("expected no series for a node with nothing preheated, got:\n%s", out)
 	}
 }
@@ -74,7 +74,7 @@ func TestPreheatMonitorTickExpiresOldPreheats(t *testing.T) {
 	m.tick()
 
 	out := scrapeMetrics(t)
-	if strings.Contains(out, `angryduck_worker_preheated_containers_running{node="`+nodeID+`"`) {
+	if strings.Contains(out, `adhdduck_worker_preheated_containers_running{node="`+nodeID+`"`) {
 		t.Errorf("expected the expired preheat to no longer count, got:\n%s", out)
 	}
 }

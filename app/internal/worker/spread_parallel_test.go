@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"angryduck/internal/model"
+	"adhdduck/internal/model"
 )
 
 // Different blobs come in side by side over the same path; only the same
@@ -28,7 +28,7 @@ func TestSpreadFetchesDifferentBlobsAtOnce(t *testing.T) {
 	if resp := postSpread(t, srv, "/spread/fetch", model.SpreadFetch{Job: "s1", Image: "r.io/app:1", Digest: da, Size: 4096, Path: model.SpreadPathRegistry}); resp.StatusCode != http.StatusConflict {
 		t.Fatalf("same blob, same path again: status %d, want 409", resp.StatusCode)
 	}
-	if out := scrapeMetrics(t); !strings.Contains(out, `angryduck_worker_spread_active{node="n1",path="registry"} 2`) {
+	if out := scrapeMetrics(t); !strings.Contains(out, `adhdduck_worker_spread_active{node="n1",path="registry"} 2`) {
 		t.Fatalf("two registry transfers not shown running:\n%s", out)
 	}
 	postSpread(t, srv, "/spread/drop", model.SpreadDrop{Job: "s1"})
@@ -84,7 +84,7 @@ func TestSpreadFinalizesDifferentImagesSideBySide(t *testing.T) {
 	waitStarted("app")
 	go finalize("r.io/web:1", &wg)
 	waitStarted("web, while app is still importing,")
-	if out := scrapeMetrics(t); !strings.Contains(out, `angryduck_worker_spread_finalizing{node="n1"} 2`) {
+	if out := scrapeMetrics(t); !strings.Contains(out, `adhdduck_worker_spread_finalizing{node="n1"} 2`) {
 		t.Fatalf("two finalizes not shown running:\n%s", out)
 	}
 	go finalize("r.io/app:1", &wg) // a retry of app while app still runs
@@ -99,7 +99,7 @@ func TestSpreadFinalizesDifferentImagesSideBySide(t *testing.T) {
 	if n := sp.finalizing.len(); n != 0 {
 		t.Fatalf("%d lock entries left after every finalize ended", n)
 	}
-	if out := scrapeMetrics(t); !strings.Contains(out, `angryduck_worker_spread_finalizing{node="n1"} 0`) {
+	if out := scrapeMetrics(t); !strings.Contains(out, `adhdduck_worker_spread_finalizing{node="n1"} 0`) {
 		t.Fatalf("finalizing gauge not back to 0:\n%s", out)
 	}
 }

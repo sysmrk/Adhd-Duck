@@ -36,7 +36,7 @@ config:
   PROPAGATE_PER_SOURCE: "2"
 ```
 
-Watch `angryduck_process_memory_bytes` for the controller after a restart and
+Watch `adhdduck_process_memory_bytes` for the controller after a restart and
 size from that. See [Sizing](operations.md#sizing).
 
 ## A slow or fragile registry
@@ -116,7 +116,7 @@ Both are needed: `SPREAD_ENABLED` controls blob-by-blob spreading,
 
 ## No CI integration yet
 
-Angry Duck still helps without the webhook: [rescue](rescue.md) unsticks
+ADHD Duck still helps without the webhook: [rescue](rescue.md) unsticks
 pulls, [cleanup](image-cleanup.md) keeps disks and rollback images in shape,
 and the [mirror](mirror.md), if enabled, serves layers from peers. Add the
 webhook when you're ready, and preheat and spreading start working.
@@ -126,8 +126,8 @@ webhook when you're ready, and preheat and spreading start working.
 Skip the ingress and call the Service directly:
 
 ```bash
-curl -fsS -m 10 -X POST http://angryduck-controller.angryduck.svc:8080/webhook/preheat \
-  -H "Authorization: Bearer ${ANGRYDUCK_WEBHOOK_TOKEN}" \
+curl -fsS -m 10 -X POST http://adhdduck-controller.adhdduck.svc:8080/webhook/preheat \
+  -H "Authorization: Bearer ${ADHDDUCK_WEBHOOK_TOKEN}" \
   -H 'Content-Type: application/json' -d "{\"image\":\"${IMAGE}\"}" || true
 ```
 
@@ -138,7 +138,7 @@ controller can read manifests from all of them. Label pull metrics by registry
 to see which one is slow.
 
 ```bash
-kubectl -n angryduck create secret generic registry-pull \
+kubectl -n adhdduck create secret generic registry-pull \
   --type=kubernetes.io/dockerconfigjson \
   --from-file=.dockerconfigjson=config.json
 ```
@@ -153,7 +153,7 @@ config:
 
 A registry missing from the file still works through the fallback ranking,
 but its images move whole instead of layer by layer.
-`angryduck_controller_seed_rankings_total` shows it as `basis="repo"` or
+`adhdduck_controller_seed_rankings_total` shows it as `basis="repo"` or
 `basis="utilization"`.
 
 ## arm64 clusters
@@ -169,7 +169,7 @@ config:
 Clusters that mix architectures are only partly covered: preheat and spreading
 follow `RANK_PLATFORM`. Exclude the other architecture's nodes with
 `PROPAGATE_EXCLUDE_NODE_SUBSTRINGS` if their names allow it, and tell us about
-your setup in [Discussions](https://github.com/hatam-abolghasemi/Angry-Duck/discussions).
+your setup in [Discussions](https://github.com/sysmrk/Adhd-Duck/discussions).
 
 ## Nodes that discard unpacked layers
 

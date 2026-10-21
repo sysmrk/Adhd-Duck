@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"angryduck/internal/model"
+	"adhdduck/internal/model"
 )
 
 // Two images sharing a base layer arrive blob by blob, all blobs at once,

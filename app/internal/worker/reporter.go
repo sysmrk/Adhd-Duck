@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"angryduck/internal/imageref"
-	"angryduck/internal/logging"
-	"angryduck/internal/model"
-	"angryduck/internal/sharedtoken"
+	"adhdduck/internal/imageref"
+	"adhdduck/internal/logging"
+	"adhdduck/internal/model"
+	"adhdduck/internal/sharedtoken"
 )
 
 // Reporter periodically scrapes node-exporter and pushes disk utilization,
@@ -87,7 +87,7 @@ func (rp *Reporter) Kick() {
 func (rp *Reporter) Run(ctx context.Context) {
 	ticker := time.NewTicker(rp.interval)
 	defer ticker.Stop()
-	logging.Infof("angryduck-worker[%s]: reporter started: interval=%s metrics_url=%s controller_url=%s",
+	logging.Infof("adhdduck-worker[%s]: reporter started: interval=%s metrics_url=%s controller_url=%s",
 		rp.nodeID, rp.interval, rp.metricsURL, rp.controllerURL)
 	// Send one report immediately so the controller doesn't wait a full
 	// interval to learn this worker exists.
@@ -95,7 +95,7 @@ func (rp *Reporter) Run(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			logging.Infof("angryduck-worker[%s]: reporter stopping", rp.nodeID)
+			logging.Infof("adhdduck-worker[%s]: reporter stopping", rp.nodeID)
 			return
 		case <-ticker.C:
 			rp.reportOnce(inventoryMaxAge(rp.interval))
@@ -124,7 +124,7 @@ func inventoryMaxAge(interval time.Duration) time.Duration {
 func (rp *Reporter) reportOnce(listMaxAge time.Duration) {
 	result, err := FetchRootUtilization(rp.metricsURL, 5*time.Second)
 	if err != nil {
-		logging.Warnf("angryduck-worker[%s]: failed to read node-exporter metrics from %s: %v", rp.nodeID, rp.metricsURL, err)
+		logging.Warnf("adhdduck-worker[%s]: failed to read node-exporter metrics from %s: %v", rp.nodeID, rp.metricsURL, err)
 		return
 	}
 
@@ -132,7 +132,7 @@ func (rp *Reporter) reportOnce(listMaxAge time.Duration) {
 	// make it obvious at a glance whether a suspicious utilization number
 	// comes from real disk pressure or from something like node-exporter
 	// reporting a filesystem that's much smaller than expected.
-	logging.Debugf("angryduck-worker[%s]: computed root fs utilization: used=%.0f bytes, free=%.0f bytes, size=%.0f bytes, utilization=%.4f (%.1f%%)",
+	logging.Debugf("adhdduck-worker[%s]: computed root fs utilization: used=%.0f bytes, free=%.0f bytes, size=%.0f bytes, utilization=%.4f (%.1f%%)",
 		rp.nodeID, result.UsedBytes, result.FreeBytes, result.SizeBytes, result.Utilization, result.Utilization*100)
 
 	repos, images, listed := rp.localInventory(listMaxAge)
@@ -161,26 +161,26 @@ func (rp *Reporter) reportOnce(listMaxAge time.Duration) {
 	}
 	body, err := json.Marshal(report)
 	if err != nil {
-		logging.Errorf("angryduck-worker[%s]: failed to marshal report: %v", rp.nodeID, err)
+		logging.Errorf("adhdduck-worker[%s]: failed to marshal report: %v", rp.nodeID, err)
 		return
 	}
 
 	url := rp.controllerURL + "/report"
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
-		logging.Errorf("angryduck-worker[%s]: failed to build report request: %v", rp.nodeID, err)
+		logging.Errorf("adhdduck-worker[%s]: failed to build report request: %v", rp.nodeID, err)
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
 	sharedtoken.SetIfAny(req, rp.token)
 	resp, err := rp.httpClient.Do(req)
 	if err != nil {
-		logging.Warnf("angryduck-worker[%s]: failed to push report to %s: %v", rp.nodeID, url, err)
+		logging.Warnf("adhdduck-worker[%s]: failed to push report to %s: %v", rp.nodeID, url, err)
 		return
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 300 {
-		logging.Warnf("angryduck-worker[%s]: controller rejected report: status=%d", rp.nodeID, resp.StatusCode)
+		logging.Warnf("adhdduck-worker[%s]: controller rejected report: status=%d", rp.nodeID, resp.StatusCode)
 		return
 	}
 	var ack model.ReportAck
@@ -191,11 +191,11 @@ func (rp *Reporter) reportOnce(listMaxAge time.Duration) {
 	if rp.layers != nil {
 		rp.layers.Ack(ack, layers)
 		if layers != nil {
-			logging.Debugf("angryduck-worker[%s]: layer sync full=%v seq=%d blobs=+%d/-%d snaps=+%d/-%d, controller holds seq=%d resync=%v",
+			logging.Debugf("adhdduck-worker[%s]: layer sync full=%v seq=%d blobs=+%d/-%d snaps=+%d/-%d, controller holds seq=%d resync=%v",
 				rp.nodeID, layers.Full, layers.Seq, len(layers.AddBlobs), len(layers.DelBlobs), len(layers.AddSnaps), len(layers.DelSnaps), ack.LayersSeq, ack.LayersResync)
 		}
 	}
-	logging.Debugf("angryduck-worker[%s]: report accepted by controller: utilization=%.1f%%, repos=%d", rp.nodeID, result.Utilization*100, len(repos))
+	logging.Debugf("adhdduck-worker[%s]: report accepted by controller: utilization=%.1f%%, repos=%d", rp.nodeID, result.Utilization*100, len(repos))
 }
 
 // localInventory asks the runtime for every local image reference once,
@@ -210,7 +210,7 @@ func (rp *Reporter) reportOnce(listMaxAge time.Duration) {
 func (rp *Reporter) localInventory(listMaxAge time.Duration) (repos, images []string, ok bool) {
 	refs, err := rp.inventory.Get(listMaxAge)
 	if err != nil {
-		logging.Warnf("angryduck-worker[%s]: failed to list local images for report: %v", rp.nodeID, err)
+		logging.Warnf("adhdduck-worker[%s]: failed to list local images for report: %v", rp.nodeID, err)
 		return nil, nil, false
 	}
 
@@ -225,7 +225,7 @@ func (rp *Reporter) localInventory(listMaxAge time.Duration) (repos, images []st
 			continue // bare image ID: no name at all
 		}
 		if strings.HasPrefix(ref, tempImageHost) {
-			continue // Angry Duck's own temporary name, gone in moments
+			continue // ADHD Duck's own temporary name, gone in moments
 		}
 		if skip[ref] {
 			continue // registered but broken: not an image this node has

@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"angryduck/internal/model"
+	"adhdduck/internal/model"
 )
 
 // /layers/holders lists every fresh holder (no cap), then nodes a running

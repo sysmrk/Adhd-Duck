@@ -172,7 +172,7 @@ func tarNames(t *testing.T, b []byte) []string {
 }
 
 func TestChainIDs_MatchesContainerd(t *testing.T) {
-	// diff_ids and chainIDs of angry-duck-worker:1.5.0 as seen on a stg node.
+	// diff_ids and chainIDs of adhd-duck-worker:1.5.0 as seen on a stg node.
 	diffs := []string{
 		"sha256:50abe06dfc0957e14cb8332ed242e8b884ef2563a9eb202e5172f243f62792f7",
 		"sha256:621c35e751a51a9a9dc3e80aa0b7fe8be2a93402ea6ccd307d30852cd7776cda",

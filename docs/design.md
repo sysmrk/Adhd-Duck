@@ -1,6 +1,6 @@
 # Design
 
-Angry Duck manages an image's life on a node, from the push to the cleanup.
+ADHD Duck manages an image's life on a node, from the push to the cleanup.
 It grew out of four problems, in the order we met them
 ([the story](story.md)):
 
@@ -22,7 +22,7 @@ That is the latest possible moment: the rollout has begun, and every node asks
 the registry for the same layers at once.
 
 The earliest moment anyone knows an image will be needed is when CI pushes
-it. So that is when Angry Duck starts, and CI tells it with a webhook: one
+it. So that is when ADHD Duck starts, and CI tells it with a webhook: one
 `curl` line every CI system can run, right after `docker push`.
 
 Why not watch something instead?
@@ -75,7 +75,7 @@ See [Propagation](propagation.md) for the details.
 ## React to events, don't poll
 
 A loop that checks every 60 seconds adds up to 60 seconds of nothing to every
-step. So Angry Duck reacts:
+step. So ADHD Duck reacts:
 
 - Workers follow **containerd's events**. Any pull or removal, kubelet's own
   included, reaches the controller in about a second.
@@ -91,7 +91,7 @@ Periodic scans still exist, but only as safety nets behind the events
 
 ## Never in the critical path
 
-A deploy must never depend on Angry Duck.
+A deploy must never depend on ADHD Duck.
 
 - If it is down or wrong, containerd pulls from the registry exactly as it
   would without it. The [mirror](mirror.md) answers `404` for anything it
@@ -135,7 +135,7 @@ Putting every new image on every node is only safe if something keeps disks
 healthy. On most nodes, images and container logs share one disk. We can't
 make an app log less, but images should never be what tips a node over.
 kubelet's image GC acts only under disk pressure, late, and without knowing
-which images a rollback needs. So cleanup is part of Angry Duck, not
+which images a rollback needs. So cleanup is part of ADHD Duck, not
 a separate tool, and the two halves share one view:
 
 - Nodes above `PROPAGATE_MAX_UTILIZATION` receive nothing new until cleanup

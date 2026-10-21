@@ -1,15 +1,15 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: angryduck-controller
+  name: adhdduck-controller
   labels:
-    app.kubernetes.io/name: angryduck
+    app.kubernetes.io/name: adhdduck
     app.kubernetes.io/component: controller
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: angryduck-controller
+  name: adhdduck-controller
 subjects:
   - kind: ServiceAccount
-    name: angryduck-controller
-    namespace: angryduck
+    name: adhdduck-controller
+    namespace: adhdduck

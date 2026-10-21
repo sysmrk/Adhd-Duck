@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"angryduck/internal/imageref"
-	"angryduck/internal/metrics"
-	"angryduck/internal/model"
+	"adhdduck/internal/imageref"
+	"adhdduck/internal/metrics"
+	"adhdduck/internal/model"
 )
 
 // fakeRuntime is an in-memory Runtime double for testing the puller and

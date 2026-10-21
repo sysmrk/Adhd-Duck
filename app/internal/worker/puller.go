@@ -1,23 +1,23 @@
 package worker
 
 import (
-	"angryduck/internal/httpinput"
+	"adhdduck/internal/httpinput"
 	"context"
 	"encoding/json"
 	"net/http"
 	"sync"
 	"time"
 
-	"angryduck/internal/imageref"
-	"angryduck/internal/logging"
-	"angryduck/internal/metrics"
-	"angryduck/internal/model"
+	"adhdduck/internal/imageref"
+	"adhdduck/internal/logging"
+	"adhdduck/internal/metrics"
+	"adhdduck/internal/model"
 )
 
 // pullsTotal counts preheat/seed pulls by result: success, failure, or
 // cancelled (the controller gave the node the image from a peer instead).
 var pullsTotal = metrics.NewCounterVec(
-	"angryduck_worker_pulls_total",
+	"adhdduck_worker_pulls_total",
 	"Seed pulls from the registry executed by this worker, by result (success, failure, cancelled). registry is only populated when METRICS_LABEL_REGISTRY=true.",
 	"node", "result", "registry",
 )
@@ -27,20 +27,20 @@ var pullsTotal = metrics.NewCounterVec(
 // time is rate(pull_seconds_total) / rate(pulls_total), with bounded
 // cardinality and no goroutine.
 var imagePullSeconds = metrics.NewRecentGaugeVec(
-	"angryduck_worker_image_pull_seconds",
+	"adhdduck_worker_image_pull_seconds",
 	"How long a seed pull of the image from its registry took, by result: success, failure, cancelled (a peer delivered first). An event, shown for METRICS_EVENT_TTL_S.",
 	"node", "image", "result",
 )
 
 var pullSecondsTotal = metrics.NewCounterVec(
-	"angryduck_worker_pull_seconds_total",
-	"Seconds spent in seed pulls from the registry, by result. Divide by angryduck_worker_pulls_total for the average.",
+	"adhdduck_worker_pull_seconds_total",
+	"Seconds spent in seed pulls from the registry, by result. Divide by adhdduck_worker_pulls_total for the average.",
 	"node", "result", "registry",
 )
 
 // pullsInFlight is the number of seed pulls running on this node.
 var pullsInFlight = metrics.NewGaugeVec(
-	"angryduck_worker_pulls_in_flight",
+	"adhdduck_worker_pulls_in_flight",
 	"Seed pulls from the registry running on this node right now.",
 	"node",
 )
@@ -108,7 +108,7 @@ func (p *Puller) HandlePull(w http.ResponseWriter, r *http.Request) {
 	p.mu.Unlock()
 	pullsInFlight.Set(float64(n), p.nodeID)
 
-	logging.Infof("angryduck-worker: pulling image=%s (seed order)", order.Image)
+	logging.Infof("adhdduck-worker: pulling image=%s (seed order)", order.Image)
 	go p.pull(ctx, order.Image)
 	writeJSON(w, http.StatusAccepted, model.PullAck{Accepted: true})
 }
@@ -138,12 +138,12 @@ func (p *Puller) pull(ctx context.Context, image string) {
 	switch {
 	case err != nil && cancelled:
 		result = "cancelled"
-		logging.Infof("angryduck-worker: pull of image=%s cancelled after %s (a peer will ship it instead)", image, elapsed.Round(time.Millisecond))
+		logging.Infof("adhdduck-worker: pull of image=%s cancelled after %s (a peer will ship it instead)", image, elapsed.Round(time.Millisecond))
 	case err != nil:
 		result = "failure"
-		logging.Errorf("angryduck-worker: pull failed for image=%s after %s: %v", image, elapsed.Round(time.Millisecond), err)
+		logging.Errorf("adhdduck-worker: pull failed for image=%s after %s: %v", image, elapsed.Round(time.Millisecond), err)
 	default:
-		logging.Infof("angryduck-worker: pull succeeded for image=%s in %s", image, elapsed.Round(time.Millisecond))
+		logging.Infof("adhdduck-worker: pull succeeded for image=%s in %s", image, elapsed.Round(time.Millisecond))
 	}
 	pullsTotal.Inc(p.nodeID, result, registry)
 	pullSecondsTotal.Add(int64(elapsed.Seconds()+0.5), p.nodeID, result, registry)

@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"angryduck/internal/layerindex"
-	"angryduck/internal/model"
+	"adhdduck/internal/layerindex"
+	"adhdduck/internal/model"
 )
 
 func TestReportCarriesLayerSyncAndAck(t *testing.T) {
@@ -46,7 +46,7 @@ func TestReportCarriesLayerSyncAndAck(t *testing.T) {
 	rec := httptest.NewRecorder()
 	srv.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/metrics", nil))
 	out, _ := io.ReadAll(rec.Body)
-	if !strings.Contains(string(out), "angryduck_controller_layer_index_digests{} 1") {
+	if !strings.Contains(string(out), "adhdduck_controller_layer_index_digests{} 1") {
 		t.Fatalf("metric missing:\n%s", out)
 	}
 }

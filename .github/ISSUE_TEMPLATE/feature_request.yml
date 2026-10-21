@@ -13,7 +13,7 @@ body:
     id: proposal
     attributes:
       label: Proposed solution
-      description: How you imagine Angry Duck could handle it.
+      description: How you imagine ADHD Duck could handle it.
     validations:
       required: true
   - type: textarea

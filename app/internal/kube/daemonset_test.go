@@ -21,13 +21,13 @@ func TestDaemonSetGone(t *testing.T) {
 	}
 	for _, c := range cases {
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path != "/apis/apps/v1/namespaces/angryduck/daemonsets/angryduck-worker" {
+			if r.URL.Path != "/apis/apps/v1/namespaces/adhdduck/daemonsets/adhdduck-worker" {
 				t.Errorf("path %s", r.URL.Path)
 			}
 			w.WriteHeader(c.status)
 			w.Write([]byte(c.body))
 		}))
-		gone, err := New(srv.URL, "", srv.Client()).DaemonSetGone(context.Background(), "angryduck", "angryduck-worker")
+		gone, err := New(srv.URL, "", srv.Client()).DaemonSetGone(context.Background(), "adhdduck", "adhdduck-worker")
 		srv.Close()
 		if gone != c.gone || (err != nil) != c.err {
 			t.Errorf("status %d: gone=%v err=%v", c.status, gone, err)

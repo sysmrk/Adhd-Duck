@@ -1,9 +1,9 @@
 //go:build integration
 
 // Integration tests against a real containerd (overlayfs + CRI). Run as
-// root with a daemon listening on ANGRYDUCK_CONTAINERD:
+// root with a daemon listening on ADHDDUCK_CONTAINERD:
 //
-//	ANGRYDUCK_CONTAINERD=/run/containerd/containerd.sock go test -tags integration ./internal/worker/
+//	ADHDDUCK_CONTAINERD=/run/containerd/containerd.sock go test -tags integration ./internal/worker/
 package worker
 
 import (
@@ -36,10 +36,10 @@ import (
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"golang.org/x/sys/unix"
 
-	"angryduck/internal/blobship"
-	"angryduck/internal/metrics"
-	"angryduck/internal/model"
-	"angryduck/internal/registryauth"
+	"adhdduck/internal/blobship"
+	"adhdduck/internal/metrics"
+	"adhdduck/internal/model"
+	"adhdduck/internal/registryauth"
 )
 
 // --- building test images ---
@@ -184,7 +184,7 @@ var (
 		{name: "home/", typ: tar.TypeDir, mode: 0o755},
 		{name: "home/app/", typ: tar.TypeDir, mode: 0o750, uid: 1000, gid: 1000},
 		{name: "home/app/secret", typ: tar.TypeReg, mode: 0o600, uid: 1000, gid: 1000, body: "s3cr3t",
-			xattrs: map[string]string{"user.angryduck": "quack"}},
+			xattrs: map[string]string{"user.adhdduck": "quack"}},
 		{name: "home/app/hardlink", typ: tar.TypeLink, mode: 0o600, uid: 1000, gid: 1000, link: "home/app/secret"},
 		{name: "usr/", typ: tar.TypeDir, mode: 0o755},
 		{name: "usr/bin/", typ: tar.TypeDir, mode: 0o755},
@@ -199,9 +199,9 @@ var (
 
 func testClient(t *testing.T) *containerd.Client {
 	t.Helper()
-	addr := os.Getenv("ANGRYDUCK_CONTAINERD")
+	addr := os.Getenv("ADHDDUCK_CONTAINERD")
 	if addr == "" {
-		t.Skip("ANGRYDUCK_CONTAINERD not set")
+		t.Skip("ADHDDUCK_CONTAINERD not set")
 	}
 	c, err := containerd.New(addr, containerd.WithTimeout(5*time.Second))
 	if err != nil {
@@ -249,7 +249,7 @@ type node struct {
 // metadata and content.
 func tree(t *testing.T, s *ContainerdStore, chainID string) map[string]node {
 	t.Helper()
-	if os.Getenv("ANGRYDUCK_NO_MOUNT") != "" {
+	if os.Getenv("ADHDDUCK_NO_MOUNT") != "" {
 		// Running with no capabilities, to prove the worker needs none:
 		// the comparison itself has to mount, so it is skipped here.
 		return nil
@@ -458,7 +458,7 @@ func TestContainerd_RescueShipsSnapshot(t *testing.T) {
 func TestContainerd_RescueShipsSnapshotFromBlobDir(t *testing.T) {
 	_, src, dst, app := setup(t)
 	for _, s := range []*ContainerdStore{src, dst} {
-		if s.UseBlobDir(os.Getenv("ANGRYDUCK_CONTAINERD_ROOT"), "/etc/containerd/config.toml") == "" {
+		if s.UseBlobDir(os.Getenv("ADHDDUCK_CONTAINERD_ROOT"), "/etc/containerd/config.toml") == "" {
 			t.Skip("containerd's content store isn't readable here")
 		}
 	}
@@ -477,7 +477,7 @@ func TestContainerd_ReceivesFromLegacySource(t *testing.T) {
 	_, src, dst, app := setup(t)
 	legacy := func(w http.ResponseWriter, r *http.Request) {
 		ctx := src.ns(r.Context())
-		key := "angryduck-view-" + randomSuffix()
+		key := "adhdduck-view-" + randomSuffix()
 		mounts, err := src.snapshotterSvc().View(ctx, key, app.chains[1])
 		if err != nil {
 			http.Error(w, err.Error(), 500)
@@ -530,7 +530,7 @@ func TestContainerd_ServesLegacyReceiver(t *testing.T) {
 	}
 	defer done(ctx)
 	sn := dst.snapshotterSvc()
-	key := "angryduck-rescue-" + randomSuffix()
+	key := "adhdduck-rescue-" + randomSuffix()
 	mounts, err := sn.Prepare(ctx, key, app.chains[0])
 	if err != nil {
 		t.Fatal(err)
@@ -666,9 +666,9 @@ func mustDigest(s string) digest.Digest { return digest.Digest(s) }
 // falls back to the registry when the mirror doesn't have the content.
 func TestCRI_MirrorGetsTokenFromHostsToml(t *testing.T) {
 	c := testClient(t)
-	certsDir := os.Getenv("ANGRYDUCK_CERTS_DIR")
+	certsDir := os.Getenv("ADHDDUCK_CERTS_DIR")
 	if certsDir == "" {
-		t.Skip("ANGRYDUCK_CERTS_DIR (containerd's config_path) not set")
+		t.Skip("ADHDDUCK_CERTS_DIR (containerd's config_path) not set")
 	}
 	// Unique content, so nothing is already in containerd's store.
 	unique := append([]fileEntry{{name: "run-id", typ: tar.TypeReg, mode: 0o644, body: randomSuffix()}}, appLayer...)
@@ -712,9 +712,9 @@ func TestCRI_MirrorGetsTokenFromHostsToml(t *testing.T) {
 // The worker dials with its own options (to count calls); they must still
 // connect the way containerd's defaults do.
 func TestContainerd_DialOptionsConnectAndCount(t *testing.T) {
-	addr := os.Getenv("ANGRYDUCK_CONTAINERD")
+	addr := os.Getenv("ADHDDUCK_CONTAINERD")
 	if addr == "" {
-		t.Skip("ANGRYDUCK_CONTAINERD not set")
+		t.Skip("ADHDDUCK_CONTAINERD not set")
 	}
 	c, err := containerd.New(addr, containerd.WithTimeout(5*time.Second), containerd.WithDialOpts(ContainerdDialOptions("dial-test")))
 	if err != nil {
@@ -735,12 +735,12 @@ func TestContainerd_DialOptionsConnectAndCount(t *testing.T) {
 // containerd's own events drive the inventory: creating and deleting an
 // image each reach the reporter within the settle time.
 func TestContainerd_InventoryFollowsEvents(t *testing.T) {
-	client, err := containerd.New(os.Getenv("ANGRYDUCK_CONTAINERD"))
+	client, err := containerd.New(os.Getenv("ADHDDUCK_CONTAINERD"))
 	if err != nil {
 		t.Skip(err)
 	}
 	defer client.Close()
-	ns := "angryduck-events-test"
+	ns := "adhdduck-events-test"
 	var changed atomic.Int32
 	w := NewInventoryWatch(client, ns, "n1", func() { changed.Add(1) }, func(bool) {})
 	w.settle = 50 * time.Millisecond

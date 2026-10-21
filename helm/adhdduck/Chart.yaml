@@ -1,13 +1,13 @@
 apiVersion: v2
-name: angryduck
+name: adhdduck
 description: Image lifecycle manager for Kubernetes nodes running containerd - preheat on push, peer-to-peer spreading, pull rescue and image cleanup.
 type: application
 version: 1.8.15
 appVersion: "1.8.15"
 kubeVersion: ">=1.30.0-0"
-home: https://github.com/hatam-abolghasemi/Angry-Duck
+home: https://github.com/sysmrk/Adhd-Duck
 sources:
-  - https://github.com/hatam-abolghasemi/Angry-Duck
+  - https://github.com/sysmrk/Adhd-Duck
 keywords:
   - containerd
   - image

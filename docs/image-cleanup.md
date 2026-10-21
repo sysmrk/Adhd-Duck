@@ -40,7 +40,7 @@ freed less than 0.2% of it, the cleanup stops removing for disk pressure,
 rollback images included, and logs what it saw. It tries again after an
 hour, or as soon as the disk grows by 1% (new images arrived, maybe
 removable ones). The 6-hour rule keeps running meanwhile.
-`angryduck_worker_gc_stalled` is 1 while it waits, and the Cleanup tab shows
+`adhdduck_worker_gc_stalled` is 1 while it waits, and the Cleanup tab shows
 the node as *stalled*.
 
 If a node stays stalled, the disk itself is too small for the thresholds:
@@ -93,11 +93,11 @@ defense.
 
 | Metric | Meaning |
 |---|---|
-| `angryduck_worker_gc_images_deleted_total{tier}` | `old` (unused past `GC_UNUSED_FOR_S`), `pressure` (removed early for disk space), `rollback`, or `error`. |
-| `angryduck_worker_gc_image_returns{image}` | Images that came back within an hour of being removed, and how often: something still uses them. Only the last hour is kept. |
-| `angryduck_worker_gc_candidates{tier}` | Images that could be removed right now, per tier. |
-| `angryduck_worker_gc_cleaning` | 1 while the disk is above high and not yet back to low. |
-| `angryduck_worker_gc_stalled` | 1 while disk-pressure removals are paused because they freed nothing. |
+| `adhdduck_worker_gc_images_deleted_total{tier}` | `old` (unused past `GC_UNUSED_FOR_S`), `pressure` (removed early for disk space), `rollback`, or `error`. |
+| `adhdduck_worker_gc_image_returns{image}` | Images that came back within an hour of being removed, and how often: something still uses them. Only the last hour is kept. |
+| `adhdduck_worker_gc_candidates{tier}` | Images that could be removed right now, per tier. |
+| `adhdduck_worker_gc_cleaning` | 1 while the disk is above high and not yet back to low. |
+| `adhdduck_worker_gc_stalled` | 1 while disk-pressure removals are paused because they freed nothing. |
 
 A node with `gc_cleaning == 1` and no candidates in any tier is full of
 running or protected images; cleanup can't help it.

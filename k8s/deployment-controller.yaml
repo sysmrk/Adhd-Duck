@@ -1,24 +1,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: angryduck-controller
-  namespace: angryduck
+  name: adhdduck-controller
+  namespace: adhdduck
   labels:
-    app.kubernetes.io/name: angryduck
+    app.kubernetes.io/name: adhdduck
     app.kubernetes.io/component: controller
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: angryduck
+      app.kubernetes.io/name: adhdduck
       app.kubernetes.io/component: controller
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: angryduck
+        app.kubernetes.io/name: adhdduck
         app.kubernetes.io/component: controller
     spec:
-      serviceAccountName: angryduck-controller
+      serviceAccountName: adhdduck-controller
       securityContext:
         runAsNonRoot: true
         runAsUser: 65532
@@ -27,27 +27,27 @@ spec:
           type: RuntimeDefault
       containers:
         - name: controller
-          image: ghcr.io/hatam-abolghasemi/angry-duck-controller:1.8.15
+          image: ghcr.io/sysmrk/adhd-duck-controller:1.8.15
           ports:
             - containerPort: 8080
               name: http
           env:
-            - name: NODE_NAME # labels angryduck_build_info
+            - name: NODE_NAME # labels adhdduck_build_info
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
           envFrom:
             - configMapRef:
-                name: angryduck-config
+                name: adhdduck-config
           volumeMounts:
             - name: registry-creds
-              mountPath: /etc/angryduck/registry-creds
+              mountPath: /etc/adhdduck/registry-creds
               readOnly: true
             - name: rescue-token
-              mountPath: /etc/angryduck/rescue-token
+              mountPath: /etc/adhdduck/rescue-token
               readOnly: true
             - name: webhook-token
-              mountPath: /etc/angryduck/webhook-token
+              mountPath: /etc/adhdduck/webhook-token
               readOnly: true
           readinessProbe:
             httpGet:
@@ -80,9 +80,9 @@ spec:
             optional: true
         - name: rescue-token
           secret:
-            secretName: angryduck-rescue-token
+            secretName: adhdduck-rescue-token
             optional: true
         - name: webhook-token
           secret:
-            secretName: angryduck-webhook-token
+            secretName: adhdduck-webhook-token
             optional: true

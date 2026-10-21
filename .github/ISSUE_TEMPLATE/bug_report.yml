@@ -1,5 +1,5 @@
 name: Bug report
-description: Something in Angry Duck didn't work as documented
+description: Something in ADHD Duck didn't work as documented
 labels: ["bug"]
 body:
   - type: markdown
@@ -10,7 +10,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: Angry Duck version
+      label: ADHD Duck version
       placeholder: "1.8.10"
     validations:
       required: true
@@ -19,7 +19,7 @@ body:
     attributes:
       label: Installed with
       options:
-        - Helm chart (charts/angryduck)
+        - Helm chart (charts/adhdduck)
         - Plain manifests (k8s/)
         - Other
     validations:

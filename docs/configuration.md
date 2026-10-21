@@ -1,6 +1,6 @@
 # Configuration
 
-Angry Duck is configured entirely through environment variables. In
+ADHD Duck is configured entirely through environment variables. In
 Kubernetes they come from the ConfigMap (or the chart's `config` values).
 Locally they can come from a `.env` file (path set by `ENV_FILE`, default
 `.env`), and real environment variables always win over the file.
@@ -23,8 +23,8 @@ Looking for a starting point rather than a reference? See
 | `LOG_LEVEL` | `info` | `debug`, `info`, `warn` or `error`. |
 | `METRICS_LABEL_REGISTRY` | `false` | Add a `registry` label to pull metrics. The set of registries is unbounded, so it is off by default. |
 | `METRICS_EVENT_TTL_S` | `15` | How long an event metric (a spread ending, a node getting an image, a pull, a repair, a removal) stays on `/metrics` after it happened, for Prometheus to scrape it; Prometheus keeps the history (see [Observability](observability.md#image-history)). Match it to your scrape interval: an event that lives less than a scrape apart can be missed. `0` turns them off. |
-| `RESCUE_TOKEN_PATH` | `/etc/angryduck/rescue-token/token` | Shared bearer token file, 32+ characters. Needed by rescue, propagation and the mirror. Read once at startup. With a token, `/report`, `/pull` and `/pull/cancel` also require it. |
-| `WEBHOOK_TOKEN_PATH` | `/etc/angryduck/webhook-token/token` | Controller only. CI's bearer token for `/webhook/preheat`, 32+ characters. If the file is missing, the webhook is unauthenticated; if it exists but is unusable, the controller exits. |
+| `RESCUE_TOKEN_PATH` | `/etc/adhdduck/rescue-token/token` | Shared bearer token file, 32+ characters. Needed by rescue, propagation and the mirror. Read once at startup. With a token, `/report`, `/pull` and `/pull/cancel` also require it. |
+| `WEBHOOK_TOKEN_PATH` | `/etc/adhdduck/webhook-token/token` | Controller only. CI's bearer token for `/webhook/preheat`, 32+ characters. If the file is missing, the webhook is unauthenticated; if it exists but is unusable, the controller exits. |
 | `AUTH_MODE` | `enforce` | `enforce` rejects control requests without the token; `warn` allows and logs them. Use `warn` only while upgrading controller and workers, then remove it. |
 | `REGISTRY_CREDENTIALS_PATH` | *(empty)* | dockerconfigjson covering every private registry, for seed pulls and manifest reads. |
 
@@ -110,7 +110,7 @@ The whole-image fallback, and the limits spread shares.
 | `RESCUE_MAX_SOURCES` | `3` | controller | Source nodes offered per rescue. |
 | `RESCUE_NODE_MAX_CONCURRENT` | `2` | worker | Images received at once. |
 | `RESCUE_PIN_TTL_S` | `3600` | worker | How long a failed attempt's snapshots stay pinned. |
-| `RESCUE_STATE_DIR` | `/var/lib/angryduck` | worker | Node directory for pins and image usage times. |
+| `RESCUE_STATE_DIR` | `/var/lib/adhdduck` | worker | Node directory for pins and image usage times. |
 | `RESCUE_CONTAINERD_NAMESPACE` | `k8s.io` | worker | containerd namespace holding kubelet's images. |
 | `RESCUE_PLATFORM` | `linux/<arch>` | worker | Platform to import. |
 
@@ -121,11 +121,11 @@ The whole-image fallback, and the limits spread shares.
 | `NODE_ID` | hostname | Node name. Set from `spec.nodeName`. |
 | `SELF_ADDRESS` | *(required)* | Address the controller and peers reach this worker at. Set from `status.podIP`. |
 | `WORKER_LISTEN_ADDR` | `:18081` | Listen address. |
-| `CONTROLLER_URL` | `http://angryduck-controller:8080` | Controller base URL. |
+| `CONTROLLER_URL` | `http://adhdduck-controller:8080` | Controller base URL. |
 | `REPORT_INTERVAL_S` | `15` | How often the worker reports. |
 | `NODE_EXPORTER_URL` | `http://localhost:9100/metrics` | Source of root filesystem utilization. The DaemonSet sets it to `http://$(HOST_IP):9100/metrics`. |
 | `POD_IP`, `POD_NAMESPACE`, `HOST_IP` | from the downward API | Set by the DaemonSet. `POD_IP` is the mirror's address in `hosts.toml`. |
-| `DAEMONSET_NAME` | `angryduck-worker` | The DaemonSet the worker checks on shutdown: gone or being deleted means an uninstall, and the worker cleans up the node. |
+| `DAEMONSET_NAME` | `adhdduck-worker` | The DaemonSet the worker checks on shutdown: gone or being deleted means an uninstall, and the worker cleans up the node. |
 | `CONTAINER_RUNTIME` | `containerd` | Only containerd is supported. `crictl` and `ctr`, from older configurations, are accepted and mean the same. |
 | `CONTAINER_RUNTIME_ENDPOINT` | `unix:///run/containerd/containerd.sock` | containerd's socket, as mounted into the worker. |
 | `CONTAINERD_SNAPSHOTTER` | `overlayfs` | The snapshotter kubelet's images are unpacked with. |
@@ -180,7 +180,7 @@ the pieces that are gone, by digest: first from peers that hold them, then
 from the image's registry. The image keeps its name throughout. Anything
 still here is held under a lease during the repair, so the garbage collector
 can't take it meanwhile. If no peer and not the registry has a piece, the
-image stays as it is, reported in `angryduck_worker_broken_image`, and the
+image stays as it is, reported in `adhdduck_worker_broken_image`, and the
 next check tries again. Images being pulled or received are left alone.
 
 Nothing is hashed to find corruption. A layer blob counts as corrupted only

@@ -12,8 +12,8 @@ import (
 	"strings"
 	"testing"
 
-	"angryduck/internal/blobship"
-	"angryduck/internal/model"
+	"adhdduck/internal/blobship"
+	"adhdduck/internal/model"
 )
 
 func TestMirrorServesLocalThenPeerThenMisses(t *testing.T) {
@@ -90,7 +90,7 @@ func TestHostsConfigOnlyTouchesItsOwnFiles(t *testing.T) {
 		t.Fatalf("docker.io hosts.toml = %q", b)
 	}
 	if b, _ := os.ReadFile(foreign); string(b) != "server = \"http://insecure\"\n" {
-		t.Fatal("a hosts.toml Angry Duck doesn't own was changed")
+		t.Fatal("a hosts.toml ADHD Duck doesn't own was changed")
 	}
 	h.Sync(nil, false)
 	if _, err := os.Stat(filepath.Join(root, dir, "registry.example.com", "hosts.toml")); !os.IsNotExist(err) {

@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"angryduck/internal/model"
-	"angryduck/internal/registryclient"
+	"adhdduck/internal/model"
+	"adhdduck/internal/registryclient"
 )
 
 type fakeOrigin struct {
@@ -46,11 +46,11 @@ func TestOriginCheckFlagsImagesTheRegistryNoLongerServes(t *testing.T) {
 	}
 	out := scrape(t)
 	for _, want := range []string{
-		`angryduck_controller_origin_unavailable{image="registry.example.com/team/app:v0",status="missing"} 2`,
-		`angryduck_controller_origin_unavailable{image="private.example.com/team/db:v3",status="denied"} 1`,
-		`angryduck_controller_origin_images{registry="registry.example.com",status="ok"} 1`,
-		`angryduck_controller_origin_images{registry="registry.example.com",status="missing"} 1`,
-		`angryduck_controller_origin_images{registry="private.example.com",status="denied"} 1`,
+		`adhdduck_controller_origin_unavailable{image="registry.example.com/team/app:v0",status="missing"} 2`,
+		`adhdduck_controller_origin_unavailable{image="private.example.com/team/db:v3",status="denied"} 1`,
+		`adhdduck_controller_origin_images{registry="registry.example.com",status="ok"} 1`,
+		`adhdduck_controller_origin_images{registry="registry.example.com",status="missing"} 1`,
+		`adhdduck_controller_origin_images{registry="private.example.com",status="denied"} 1`,
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing %s", want)
@@ -88,7 +88,7 @@ func TestOriginCheckSpreadsChecksOverTheInterval(t *testing.T) {
 	if len(f.asked) != 10 {
 		t.Fatalf("one tick sent %d checks, want 10 (600 images, twice an hour, every 30s)", len(f.asked))
 	}
-	if !strings.Contains(scrape(t), `angryduck_controller_origin_images{registry="registry.example.com",status="unchecked"} 590`) {
+	if !strings.Contains(scrape(t), `adhdduck_controller_origin_images{registry="registry.example.com",status="unchecked"} 590`) {
 		t.Error("images not checked yet are counted as unchecked")
 	}
 }

@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: angryduck-config
-  namespace: angryduck
+  name: adhdduck-config
+  namespace: adhdduck
   labels:
-    app.kubernetes.io/name: angryduck
+    app.kubernetes.io/name: adhdduck
 data:
   LOG_LEVEL: "info"
   METRICS_LABEL_REGISTRY: "true"
@@ -24,21 +24,21 @@ data:
   ORIGIN_CHECK_DELAY_S: "120"
   ORIGIN_CHECK_REGISTRIES: ""
   WORKER_LISTEN_ADDR: ":18081"
-  CONTROLLER_URL: "http://angryduck-controller.angryduck.svc.cluster.local:8080"
+  CONTROLLER_URL: "http://adhdduck-controller.adhdduck.svc.cluster.local:8080"
   REPORT_INTERVAL_S: "15"
   PREHEAT_ATTRIBUTION_INTERVAL_S: "300"
   PREHEAT_ATTRIBUTION_RETENTION_S: "360"
   CONTAINER_RUNTIME: "containerd"
   CONTAINER_RUNTIME_ENDPOINT: "unix:///run/containerd/containerd.sock"
-  REGISTRY_CREDENTIALS_PATH: "/etc/angryduck/registry-creds/.dockerconfigjson"
+  REGISTRY_CREDENTIALS_PATH: "/etc/adhdduck/registry-creds/.dockerconfigjson"
   RESCUE_ENABLED: "true"
-  RESCUE_TOKEN_PATH: "/etc/angryduck/rescue-token/token"
+  RESCUE_TOKEN_PATH: "/etc/adhdduck/rescue-token/token"
   RESCUE_INTERVAL_S: "15"
   RESCUE_RESYNC_INTERVAL_S: "600"
   RESCUE_RETRY_AFTER_S: "120"
   RESCUE_BACKOFF_MAX_S: "3600"
   RESCUE_PIN_TTL_S: "3600"
-  RESCUE_STATE_DIR: "/var/lib/angryduck"
+  RESCUE_STATE_DIR: "/var/lib/adhdduck"
   RESCUE_TIMEOUT_S: "600"
   RESCUE_MAX_CONCURRENT: "2"
   RESCUE_MAX_SOURCES: "3"

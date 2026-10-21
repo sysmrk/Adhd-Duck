@@ -30,7 +30,7 @@ import (
 	digest "github.com/opencontainers/go-digest"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 
-	"angryduck/internal/logging"
+	"adhdduck/internal/logging"
 )
 
 // ContainerdStore is blobship.Store (and the mirror's, cleanup's and layer
@@ -468,7 +468,7 @@ func (s *ContainerdStore) dropTemps(ctx context.Context, names []string) {
 	defer cancel()
 	for _, n := range names {
 		if err := s.client.ImageService().Delete(ctx, n); err != nil && !errdefs.IsNotFound(err) {
-			logging.Warnf("angryduck-worker: removing temporary image %s: %v (removed at the next start)", n, err)
+			logging.Warnf("adhdduck-worker: removing temporary image %s: %v (removed at the next start)", n, err)
 		}
 	}
 }
@@ -793,13 +793,13 @@ func (s *ContainerdStore) ExportSnapshot(ctx context.Context, chainID, parent st
 
 	// Views named with a temp prefix, so the startup cleanup also finds
 	// any a crash left behind.
-	lowerKey := "angryduck-view-" + randomSuffix()
+	lowerKey := "adhdduck-view-" + randomSuffix()
 	lower, err := sn.View(ctx, lowerKey, parent)
 	if err != nil {
 		return fmt.Errorf("view of parent %q: %w", parent, err)
 	}
 	defer removeQuietly(ctx, sn, lowerKey)
-	upperKey := "angryduck-view-" + randomSuffix()
+	upperKey := "adhdduck-view-" + randomSuffix()
 	upper, err := sn.View(ctx, upperKey, chainID)
 	if err != nil {
 		return fmt.Errorf("view of %s: %w", chainID, err)
@@ -808,7 +808,7 @@ func (s *ContainerdStore) ExportSnapshot(ctx context.Context, chainID, parent st
 
 	desc, err := s.client.DiffService().Compare(ctx, lower, upper,
 		ctrdiff.WithMediaType(ocispec.MediaTypeImageLayer),
-		ctrdiff.WithReference("angryduck-export-"+randomSuffix()))
+		ctrdiff.WithReference("adhdduck-export-"+randomSuffix()))
 	if err != nil {
 		return fmt.Errorf("diff of %s: %w", chainID, err)
 	}
@@ -831,7 +831,7 @@ func (s *ContainerdStore) ApplySnapshot(ctx context.Context, chainID, parent str
 	defer done(context.WithoutCancel(ctx))
 
 	cs := s.client.ContentStore()
-	cw, err := content.OpenWriter(ctx, cs, content.WithRef("angryduck-apply-"+randomSuffix()))
+	cw, err := content.OpenWriter(ctx, cs, content.WithRef("adhdduck-apply-"+randomSuffix()))
 	if err != nil {
 		return err
 	}
@@ -859,8 +859,8 @@ func (s *ContainerdStore) ApplySnapshot(ctx context.Context, chainID, parent str
 	desc := ocispec.Descriptor{MediaType: ocispec.MediaTypeImageLayer, Digest: dgst, Size: n}
 
 	sn := s.snapshotterSvc()
-	pin := snapshots.WithLabels(map[string]string{gcRootLabel: "angryduck-rescue"})
-	key := "angryduck-rescue-" + randomSuffix()
+	pin := snapshots.WithLabels(map[string]string{gcRootLabel: "adhdduck-rescue"})
+	key := "adhdduck-rescue-" + randomSuffix()
 	mounts, err := sn.Prepare(ctx, key, parent, pin)
 	if err != nil {
 		return err

@@ -62,10 +62,10 @@ curl -s localhost:8080/status | jq '.rescues'
 
 Each entry lists the node, image, pods, last result or error, failures in a
 row and the next attempt. The key metrics are
-`angryduck_controller_rescue_stuck_images`,
-`angryduck_controller_rescues_total{result}` (`success`, `failure`,
+`adhdduck_controller_rescue_stuck_images`,
+`adhdduck_controller_rescues_total{result}` (`success`, `failure`,
 `no_source`, `no_target`, `pull_policy_always`) and
-`angryduck_controller_rescue_consecutive_failures`.
+`adhdduck_controller_rescue_consecutive_failures`.
 
 ## Settings
 

@@ -1,13 +1,25 @@
-# 🦆🔪 Angry Duck
+# 🦆🔪 ADHD Duck
+
+ADHD Duck is a fork of [Angry Duck](https://github.com/hatam-abolghasemi/Angry-Duck),
+maintained in [sysmrk/Adhd-Duck](https://github.com/sysmrk/Adhd-Duck).
+It retains the upstream Apache-2.0 license and attribution; see [NOTICE](NOTICE).
+Documentation, source comments, configuration examples and contribution guidance
+in this repository are maintained in English.
+
+The `ghcr.io/sysmrk/adhd-duck-*` images and `adhdduck` Helm chart are this fork's
+release targets. Until a release publishes them, build from source or import
+locally built images; the new coordinates do not imply published artifacts.
+Existing installations need the [rename migration guide](docs/migration.md).
+
 
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
-[![Release](https://img.shields.io/github/v/release/hatam-abolghasemi/Angry-Duck)](https://github.com/hatam-abolghasemi/Angry-Duck/releases)
+[![Release](https://img.shields.io/github/v/release/sysmrk/Adhd-Duck)](https://github.com/sysmrk/Adhd-Duck/releases)
 
 **An image lifecycle manager for Kubernetes.** It gets new images onto your
 nodes before the rollout asks for them, gets pods started when the registry
 can't help, and keeps disks healthy, from the push to the cleanup.
 
-Angry Duck gets a freshly pushed image onto your nodes while the rest of your
+ADHD Duck gets a freshly pushed image onto your nodes while the rest of your
 pipeline is still running, so when the rollout starts, the image is already
 there. The registry serves each new layer about once and nodes share the rest
 among themselves. When a node can't pull an image a neighbor already has, the
@@ -40,15 +52,15 @@ Then the other problems showed up, one by one:
 We tried Dragonfly, then Spegel. Neither made us happy, and each covered only
 part of the problem. So we built the tool we wanted, one that looks after an
 image's whole life on the node. The full story is in
-[How Angry Duck came to be](docs/story.md).
+[How ADHD Duck came to be](docs/story.md).
 
 ## The idea
 
 **Start early, run in parallel, never block.** A push is the earliest moment
-anyone knows an image will be needed, so CI tells Angry Duck right then with a
+anyone knows an image will be needed, so CI tells ADHD Duck right then with a
 webhook and moves on. While CI updates manifests and your GitOps tool syncs,
 the image is already spreading through the cluster. CI never waits for it, and
-a deploy never depends on it: if Angry Duck is down or wrong, containerd pulls
+a deploy never depends on it: if ADHD Duck is down or wrong, containerd pulls
 from the registry exactly as it would without it.
 
 Inside, the same rule holds. Nothing waits for a schedule when it can react to
@@ -58,7 +70,7 @@ spreads on its own, from any node that has it, without waiting for whole
 images. The registry is only asked for what no node has yet.
 
 **Cleanup is the other half of distribution.** Putting every new image on
-every node is only safe if something keeps disks healthy. Angry Duck removes
+every node is only safe if something keeps disks healthy. ADHD Duck removes
 images nothing has used for hours, frees space early when a disk runs high,
 and keeps the last few images of each app for rollbacks. Distribution pauses
 on a full node until cleanup has made room.
@@ -96,26 +108,26 @@ and cleanup.
 
 You need Kubernetes 1.30+, containerd with the overlayfs snapshotter, and
 node-exporter on every node. Check the
-[node settings](docs/node-settings.md) that decide how much Angry Duck can do,
+[node settings](docs/node-settings.md) that decide how much ADHD Duck can do,
 then install.
 
 Prebuilt images for every release are on GitHub Container Registry:
-`ghcr.io/hatam-abolghasemi/angry-duck-controller` and
-`ghcr.io/hatam-abolghasemi/angry-duck-worker`. The Helm chart uses them by
+`ghcr.io/sysmrk/adhd-duck-controller` and
+`ghcr.io/sysmrk/adhd-duck-worker`. The Helm chart uses them by
 default:
 
 ```bash
-helm upgrade --install angryduck ./helm/angryduck \
-  --namespace angryduck --create-namespace \
-  --set ingress.host=angryduck.example.com
+helm upgrade --install adhdduck ./helm/adhdduck \
+  --namespace adhdduck --create-namespace \
+  --set ingress.host=adhdduck.example.com
 ```
 
 See [Helm](docs/helm.md) for the values, or [Installation](docs/installation.md)
 for plain manifests. Then call the webhook from CI after every push:
 
 ```bash
-curl -fsS -m 10 -X POST https://angryduck.example.com/webhook/preheat \
-  -H "Authorization: Bearer ${ANGRYDUCK_WEBHOOK_TOKEN}" \
+curl -fsS -m 10 -X POST https://adhdduck.example.com/webhook/preheat \
+  -H "Authorization: Bearer ${ADHDDUCK_WEBHOOK_TOKEN}" \
   -H 'Content-Type: application/json' -d "{\"image\":\"${IMAGE}\"}" || true
 ```
 
@@ -126,12 +138,12 @@ or [Helm](docs/helm.md), then pick a setup from [Recipes](docs/recipes.md).
 
 | Guide | Contents |
 |---|---|
-| [Story](docs/story.md) | How Angry Duck came to be, one problem at a time. |
+| [Story](docs/story.md) | How ADHD Duck came to be, one problem at a time. |
 | [Design](docs/design.md) | Why it works the way it does. |
 | [Architecture](docs/architecture.md) | Components, reporting, state, and an image's life from push to cleanup. |
 | [Installation](docs/installation.md) | Requirements, deployment, CI integration and verification. |
 | [Helm](docs/helm.md) | Installing with the chart and its values. |
-| [Node settings and limits](docs/node-settings.md) | containerd and kubelet settings that help, CI and workload usage, and what Angry Duck can't do. |
+| [Node settings and limits](docs/node-settings.md) | containerd and kubelet settings that help, CI and workload usage, and what ADHD Duck can't do. |
 | [Recipes](docs/recipes.md) | Ready-made settings for common clusters and goals. |
 | [Configuration](docs/configuration.md) | Every setting, with defaults. |
 | [Operations](docs/operations.md) | Status, logs, troubleshooting, upgrades and bootstrapping a node. |
@@ -153,13 +165,13 @@ Duck targets Linux nodes running containerd 1.6 or later.
 
 ## Feedback and contributing
 
-Running Angry Duck, or thinking about it? Tell us how it goes in
-[Discussions](https://github.com/hatam-abolghasemi/Angry-Duck/discussions).
+Running ADHD Duck, or thinking about it? Tell us how it goes in
+[Discussions](https://github.com/sysmrk/Adhd-Duck/discussions).
 Bugs and feature requests go in
-[Issues](https://github.com/hatam-abolghasemi/Angry-Duck/issues), and security
-reports through the [private advisory form](https://github.com/hatam-abolghasemi/Angry-Duck/security/advisories/new).
+[Issues](https://github.com/sysmrk/Adhd-Duck/issues), and security
+reports through the [private advisory form](https://github.com/sysmrk/Adhd-Duck/security/advisories/new).
 See [Development](docs/development.md) to build and test it.
 
 ## License
 
-Angry Duck is licensed under the [Apache License 2.0](LICENSE).
+ADHD Duck is licensed under the [Apache License 2.0](LICENSE).

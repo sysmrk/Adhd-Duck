@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"angryduck/internal/kube"
-	"angryduck/internal/model"
+	"adhdduck/internal/kube"
+	"adhdduck/internal/model"
 )
 
 const rescueToken = "0123456789abcdef0123456789abcdef"
@@ -74,8 +74,8 @@ func TestRescuer_OrdersStuckNodeWithSourcesByUtilization(t *testing.T) {
 	report(reg, "worker9", "10.0.0.9:18081", 0.1, "registry.example.com/team/app:1.4.10") // other tag: not a source
 
 	rs := newTestRescuer(reg, []kube.Pod{
-		stuckPod("angryduck", "a", "master1", img, "ImagePullBackOff", "IfNotPresent"),
-		stuckPod("angryduck", "b", "master1", img, "ErrImagePull", "IfNotPresent"), // same node+image: one order
+		stuckPod("adhdduck", "a", "master1", img, "ImagePullBackOff", "IfNotPresent"),
+		stuckPod("adhdduck", "b", "master1", img, "ErrImagePull", "IfNotPresent"), // same node+image: one order
 	})
 	rs.tick(context.Background())
 	rs.wg.Wait()
@@ -90,7 +90,7 @@ func TestRescuer_OrdersStuckNodeWithSourcesByUtilization(t *testing.T) {
 	if sink.auth[0] != "Bearer "+rescueToken {
 		t.Fatalf("order sent without the token: %q", sink.auth[0])
 	}
-	if out := scrape(t); !strings.Contains(out, `angryduck_controller_image_delivery_seconds{image="`+img+`",node="master1",via="rescue"}`) {
+	if out := scrape(t); !strings.Contains(out, `adhdduck_controller_image_delivery_seconds{image="`+img+`",node="master1",via="rescue"}`) {
 		t.Fatalf("rescue not in the image history:\n%s", out)
 	}
 

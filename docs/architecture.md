@@ -4,7 +4,7 @@ This page is the map: what runs where, what it knows, and how an image moves
 from a CI push to cleanup. For why it's built this way, see
 [Design](design.md).
 
-Angry Duck has two components. Both are static Go binaries; their Go dependencies, including containerd, gRPC and OCI libraries, are listed in `app/go.mod`.
+ADHD Duck has two components. Both are static Go binaries; their Go dependencies, including containerd, gRPC and OCI libraries, are listed in `app/go.mod`.
 
 | Component | Runs as | Responsibilities |
 |---|---|---|
@@ -92,7 +92,7 @@ content store when it is mounted, and through the content API otherwise.
 - **It doesn't resolve tags.** The mirror serves content by digest only.
   Registry outages that block tag resolution are covered by rescue.
 - **It doesn't replace kubelet's image GC.** kubelet still acts at disk
-  pressure as the last line of defense. Angry Duck's cleanup runs well before
+  pressure as the last line of defense. ADHD Duck's cleanup runs well before
   it.
 - **It doesn't restart pods.** After a rescue, kubelet's next retry finds the
   image.

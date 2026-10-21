@@ -4,8 +4,8 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY internal ./internal
 COPY cmd/controller ./cmd/controller
-RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/angryduck-controller ./cmd/controller
+RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/adhdduck-controller ./cmd/controller
 
 FROM gcr.io/distroless/static-debian13
-COPY --from=build /out/angryduck-controller /angryduck-controller
-ENTRYPOINT ["/angryduck-controller"]
+COPY --from=build /out/adhdduck-controller /adhdduck-controller
+ENTRYPOINT ["/adhdduck-controller"]

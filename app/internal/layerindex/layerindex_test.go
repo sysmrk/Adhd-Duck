@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"angryduck/internal/model"
+	"adhdduck/internal/model"
 )
 
 func d(n int) string { return fmt.Sprintf("sha256:%064x", n) }
@@ -95,7 +95,7 @@ func TestInterningRefcountsAndFrees(t *testing.T) {
 
 func TestMalformedDigestsIgnored(t *testing.T) {
 	x := New()
-	x.Apply("a", full("e", 1, []string{"sha256:nothex", "md5:abc", "", d(1)}, []string{"angryduck-view-1"}))
+	x.Apply("a", full("e", 1, []string{"sha256:nothex", "md5:abc", "", d(1)}, []string{"adhdduck-view-1"}))
 	if b, s, _ := x.Counts("a"); b != 1 || s != 0 {
 		t.Fatalf("blobs=%d snaps=%d, want 1 0", b, s)
 	}

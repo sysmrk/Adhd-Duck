@@ -12,7 +12,7 @@ import (
 	"reflect"
 	"strings"
 
-	"angryduck/internal/imageref"
+	"adhdduck/internal/imageref"
 )
 
 const ReportLimit int64 = 8 << 20

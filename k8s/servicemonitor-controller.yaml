@@ -1,20 +1,20 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: angryduck-controller
-  namespace: angryduck
+  name: adhdduck-controller
+  namespace: adhdduck
   labels:
     release: prometheus
-    app.kubernetes.io/name: angryduck
+    app.kubernetes.io/name: adhdduck
     app.kubernetes.io/component: controller
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/name: angryduck
+      app.kubernetes.io/name: adhdduck
       app.kubernetes.io/component: controller
   namespaceSelector:
     matchNames:
-      - angryduck
+      - adhdduck
   endpoints:
     - port: http
       path: /metrics

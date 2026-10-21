@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"testing"
 
-	"angryduck/internal/layerindex"
-	"angryduck/internal/model"
+	"adhdduck/internal/layerindex"
+	"adhdduck/internal/model"
 )
 
 type fakeLister struct {
@@ -54,7 +54,7 @@ func step(t *LayerTracker, c *controllerSim, force bool) *model.LayerSync {
 func TestTrackerFullThenDeltasThenQuiet(t *testing.T) {
 	l := &fakeLister{
 		blobs: map[string]bool{dg(1): true, dg(2): true},
-		snaps: map[string]bool{dg(101): true, "4f2a9c": true, "angryduck-view-x": true},
+		snaps: map[string]bool{dg(101): true, "4f2a9c": true, "adhdduck-view-x": true},
 	}
 	tr := NewLayerTracker(l, "n1", 0)
 	c := &controllerSim{x: layerindex.New()}

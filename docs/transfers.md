@@ -96,5 +96,5 @@ is only the CRC, the token-authenticated peer and TCP.
   collection for `RESCUE_PIN_TTL_S`, so a retry doesn't ship them again. They
   are released right away on success.
 - A restarted worker removes leftover temporary snapshots and base images, and
-  releases expired pins. `angryduck_worker_rescue_cleanups_total{kind}` counts
+  releases expired pins. `adhdduck_worker_rescue_cleanups_total{kind}` counts
   them.

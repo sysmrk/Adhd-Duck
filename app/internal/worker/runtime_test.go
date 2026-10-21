@@ -19,7 +19,7 @@ func TestCrictlImagesParsing(t *testing.T) {
     {
       "id":  "sha256:babca8157e8e6997ce9caaf6ab35c580970c74799c936fd5ea9ae7ebea60d3a8",
       "repoTags":  [
-        "test.local/angryduck-testimg:v1"
+        "test.local/adhdduck-testimg:v1"
       ],
       "repoDigests":  [],
       "size":  "4730554",
@@ -46,7 +46,7 @@ func TestCrictlImagesParsing(t *testing.T) {
 	if len(parsed.Images) != 2 {
 		t.Fatalf("got %d images, want 2", len(parsed.Images))
 	}
-	if len(parsed.Images[0].RepoTags) != 1 || parsed.Images[0].RepoTags[0] != "test.local/angryduck-testimg:v1" {
+	if len(parsed.Images[0].RepoTags) != 1 || parsed.Images[0].RepoTags[0] != "test.local/adhdduck-testimg:v1" {
 		t.Fatalf("unexpected repoTags for image 0: %v", parsed.Images[0].RepoTags)
 	}
 	if len(parsed.Images[1].RepoTags) != 1 || parsed.Images[1].RepoTags[0] != "test.local/pause:v1" {
@@ -169,7 +169,7 @@ func TestCountRunningReposByContainerMissingImageRef(t *testing.T) {
 // image ID, so image.image and imageRef are both bare "sha256:..." IDs.
 // The repo must come from userSpecifiedImage when present, otherwise from
 // the node's image list. Without this, every container was skipped and
-// angryduck_worker_preheated_containers_running never got a series.
+// adhdduck_worker_preheated_containers_running never got a series.
 func TestCountRunningReposByContainerKubeletShape(t *testing.T) {
 	const appID = "sha256:1111111111111111111111111111111111111111111111111111111111111111"
 	const dbID = "sha256:2222222222222222222222222222222222222222222222222222222222222222"

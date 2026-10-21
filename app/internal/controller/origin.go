@@ -7,26 +7,26 @@ import (
 	"strings"
 	"time"
 
-	"angryduck/internal/imageref"
-	"angryduck/internal/logging"
-	"angryduck/internal/metrics"
-	"angryduck/internal/registryclient"
+	"adhdduck/internal/imageref"
+	"adhdduck/internal/logging"
+	"adhdduck/internal/metrics"
+	"adhdduck/internal/registryclient"
 )
 
 var (
 	originImages = metrics.NewGaugeVec(
-		"angryduck_controller_origin_images",
-		"Distinct images held on fresh nodes, by registry and what that registry answered at the last origin check: ok, missing (no such manifest), denied (Angry Duck's credentials were refused, or none are configured and the registry wants some), unreachable (no usable answer) or unchecked (not checked yet).",
+		"adhdduck_controller_origin_images",
+		"Distinct images held on fresh nodes, by registry and what that registry answered at the last origin check: ok, missing (no such manifest), denied (ADHD Duck's credentials were refused, or none are configured and the registry wants some), unreachable (no usable answer) or unchecked (not checked yet).",
 		"registry", "status",
 	)
 	originUnavailable = metrics.NewGaugeVec(
-		"angryduck_controller_origin_unavailable",
+		"adhdduck_controller_origin_unavailable",
 		"Images held on nodes that their registry did not serve at the last origin check, by status (missing or denied). The value is how many fresh nodes still hold a copy: once the last one removes it, nothing can pull the image again.",
 		"image", "status",
 	)
 	originChecksTotal = metrics.NewCounterVec(
-		"angryduck_controller_origin_checks_total",
-		"Origin checks (a HEAD request for the image's manifest at its registry, with Angry Duck's credentials), by result: ok, missing, denied, unreachable.",
+		"adhdduck_controller_origin_checks_total",
+		"Origin checks (a HEAD request for the image's manifest at its registry, with ADHD Duck's credentials), by result: ok, missing, denied, unreachable.",
 		"status",
 	)
 )
@@ -89,7 +89,7 @@ func NewOriginChecker(registry *Registry, checker ManifestChecker, cfg OriginCon
 
 // Run blocks, checking until ctx is done.
 func (o *OriginChecker) Run(ctx context.Context) {
-	logging.Infof("angryduck-controller: origin check starting in %s: interval=%s registries=%v", o.cfg.Delay, o.cfg.Interval, o.cfg.Registries)
+	logging.Infof("adhdduck-controller: origin check starting in %s: interval=%s registries=%v", o.cfg.Delay, o.cfg.Interval, o.cfg.Registries)
 	if o.cfg.Delay > 0 {
 		d := time.NewTimer(o.cfg.Delay)
 		select {
@@ -198,11 +198,11 @@ func (o *OriginChecker) check(ctx context.Context, image string, holders int) {
 	switch {
 	case seen && prev.status == status, !seen && status == "ok":
 	case status == "ok":
-		logging.Infof("angryduck-controller: origin check: image=%s is served by its registry again", image)
+		logging.Infof("adhdduck-controller: origin check: image=%s is served by its registry again", image)
 	case status == "unreachable":
-		logging.Debugf("angryduck-controller: origin check: image=%s: registry unreachable: %v", image, err)
+		logging.Debugf("adhdduck-controller: origin check: image=%s: registry unreachable: %v", image, err)
 	default:
-		logging.Warnf("angryduck-controller: origin check: image=%s, held on %d node(s), is %s at its registry: %v", image, holders, status, err)
+		logging.Warnf("adhdduck-controller: origin check: image=%s, held on %d node(s), is %s at its registry: %v", image, holders, status, err)
 	}
 }
 

@@ -27,8 +27,8 @@ import (
 	digest "github.com/opencontainers/go-digest"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 
-	"angryduck/internal/blobship"
-	"angryduck/internal/model"
+	"adhdduck/internal/blobship"
+	"adhdduck/internal/model"
 )
 
 // metadataOnly is img's archive without its layer blobs: what a spread
@@ -232,7 +232,7 @@ func (b builtRegistry) OpenManifest(_ context.Context, _, d string) (io.ReadClos
 // throwaway image synchronously.
 func collect(t *testing.T, c *containerd.Client, nctx context.Context) {
 	t.Helper()
-	img := images.Image{Name: "angryduck.local/gc-trigger:1", Target: ocispec.Descriptor{MediaType: "application/vnd.oci.image.manifest.v1+json", Digest: digest.Digest("sha256:" + strings.Repeat("0", 64)), Size: 1}}
+	img := images.Image{Name: "adhdduck.local/gc-trigger:1", Target: ocispec.Descriptor{MediaType: "application/vnd.oci.image.manifest.v1+json", Digest: digest.Digest("sha256:" + strings.Repeat("0", 64)), Size: 1}}
 	if _, err := c.ImageService().Create(nctx, img); err != nil && !errdefs.IsAlreadyExists(err) {
 		t.Fatal(err)
 	}
@@ -330,9 +330,9 @@ func TestContainerd_RepairFetchesMissingMetadata(t *testing.T) {
 // controller's wake carries that error, and the repair replaces just that
 // blob.
 func TestContainerd_RepairReplacesALayerThatFailedToUnpack(t *testing.T) {
-	root := os.Getenv("ANGRYDUCK_CONTAINERD_ROOT")
+	root := os.Getenv("ADHDDUCK_CONTAINERD_ROOT")
 	if root == "" {
-		t.Skip("ANGRYDUCK_CONTAINERD_ROOT not set: the test corrupts a blob file directly")
+		t.Skip("ADHDDUCK_CONTAINERD_ROOT not set: the test corrupts a blob file directly")
 	}
 	c := testClient(t)
 	ctx := context.Background()

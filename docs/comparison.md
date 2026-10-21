@@ -1,6 +1,6 @@
 # Comparison with similar tools
 
-Angry Duck manages an image's whole life on the node: placing it before a
+ADHD Duck manages an image's whole life on the node: placing it before a
 rollout, spreading it across the fleet, rescuing pulls that fail, and removing
 it once nothing needs it. Most tools in this space do one of those steps well.
 This page compares them feature by feature, and explains why we put the steps
@@ -8,7 +8,7 @@ in one tool.
 
 ## At a glance
 
-| | Angry Duck | Spegel | Dragonfly | Kraken | kube-fledged | OpenKruise ImagePullJob | Eraser | kubelet image GC | kuik v2 |
+| | ADHD Duck | Spegel | Dragonfly | Kraken | kube-fledged | OpenKruise ImagePullJob | Eraser | kubelet image GC | kuik v2 |
 |---|---|---|---|---|---|---|---|---|---|
 | **Push-triggered preheat** | Yes, webhook from CI | No | Yes, into seed peers | No | Declared list, refreshed on a schedule | Declared job | No | No | No |
 | **Image on every node before pods ask** | Yes, propagation | No | No | No | Yes, each node pulls from the registry | Yes, each node pulls from the registry | No | No | No |
@@ -32,7 +32,7 @@ and it happens to hold the content. Nothing detects the stuck pod.
 
 A stateless peer-to-peer mirror. Every node serves what its containerd already
 has, found through a Kademlia DHT. It is small, needs no storage, and is the
-closest tool to Angry Duck's mirror.
+closest tool to ADHD Duck's mirror.
 
 It is reactive by design: it helps once a pull is under way, never before. It
 does not place images, notice stuck pods or clean up. It requires containerd's
@@ -95,7 +95,7 @@ Each step needs to know what the others did.
   seeds by which nodes already hold most of an image's layers, and sends only
   the missing layers. Rescue uses the same inventory to find sources.
 - **Cleanup must not undo placement.** A separate GC sees a freshly propagated
-  image as unused and removes it before the rollout. Angry Duck's cleanup and
+  image as unused and removes it before the rollout. ADHD Duck's cleanup and
   propagation share one view: propagation waits for cleanup on full disks, and
   cleanup keeps rollback images that rescue and rollbacks rely on.
 - **Transfers share one budget.** Preheat, propagation and rescue compete for
@@ -110,7 +110,7 @@ Each step needs to know what the others did.
 
 ## Why we moved off Spegel
 
-We ran Spegel alongside Angry Duck on a ~20-node staging cluster, with Angry
+We ran Spegel alongside ADHD Duck on a ~20-node staging cluster, with Angry
 Duck handling preheat, rescue and cleanup, and Spegel handling P2P during
 pulls. We removed Spegel after these problems:
 
@@ -129,13 +129,13 @@ pulls. We removed Spegel after these problems:
   Our own cleanup triggered it, which is the point above about tools stepping
   on each other.
 - **It covered only one step.** Even when it worked, it helped only during a
-  pull. Placement, rescue and cleanup still needed Angry Duck.
+  pull. Placement, rescue and cleanup still needed ADHD Duck.
 
 These are our results on our cluster, not a verdict on Spegel. It works well
 for many people, especially on clusters where its containerd requirements are
 already met.
 
-## What Angry Duck doesn't do
+## What ADHD Duck doesn't do
 
 - **It isn't a registry or a replicator.** Registry redundancy belongs in the
   registry layer, with replication or a pull-through cache.

@@ -1,8 +1,8 @@
-# Angry Duck documentation
+# ADHD Duck documentation
 
 **Start here**
 
-1. [Design](design.md): what Angry Duck is for and why it works this way.
+1. [Design](design.md): what ADHD Duck is for and why it works this way.
 2. [Installation](installation.md) or [Helm](helm.md): get it running.
 3. [Recipes](recipes.md): settings for your kind of cluster.
 
@@ -21,6 +21,8 @@
 - [Node settings and limits](node-settings.md): containerd and kubelet settings that matter.
 - [Configuration](configuration.md): every setting with its default.
 - [Operations](operations.md): status, logs, troubleshooting, upgrades.
+- [Migration](migration.md): renamed resources, state, images and metrics.
+- [Input validation](input-validation.md): request limits and configuration checks.
 - [Observability](observability.md): metrics, the Grafana dashboard, alerts.
 - [Security](security.md): privileges, trust boundaries, hardening.
 - [API](api.md): controller and worker endpoints.
@@ -28,6 +30,6 @@
 
 **Background**
 
-- [How Angry Duck came to be](story.md): the problems that shaped it, one by one.
+- [Project history](story.md): the upstream origin and this fork's changes.
 - [Comparison](comparison.md): similar tools, and why one tool for the whole image lifecycle.
-- [The name](name.md): why a duck, why angry, and why the knife.
+- [The name](name.md): the fork's name and technical identifiers.

@@ -11,11 +11,11 @@ import (
 	"testing"
 	"time"
 
-	"angryduck/internal/blobship"
-	"angryduck/internal/layerindex"
-	"angryduck/internal/metrics"
-	"angryduck/internal/model"
-	"angryduck/internal/registryclient"
+	"adhdduck/internal/blobship"
+	"adhdduck/internal/layerindex"
+	"adhdduck/internal/metrics"
+	"adhdduck/internal/model"
+	"adhdduck/internal/registryclient"
 )
 
 const (
@@ -274,7 +274,7 @@ func TestSpreader_FinalizesWhenEveryLayerIsThereThenCompletes(t *testing.T) {
 		s.tick(context.Background())
 		s.wg.Wait()
 	}
-	if out := scrape(t); !strings.Contains(out, `angryduck_controller_image_spread_seconds{image="`+img+`",result="running"}`) {
+	if out := scrape(t); !strings.Contains(out, `adhdduck_controller_image_spread_seconds{image="`+img+`",result="running"}`) {
 		t.Fatalf("running spread not in the image history:\n%s", out)
 	}
 	f.mu.Lock()
@@ -299,32 +299,32 @@ func TestSpreader_FinalizesWhenEveryLayerIsThereThenCompletes(t *testing.T) {
 		t.Fatal("job still running after every node registered the image")
 	}
 	out := scrape(t)
-	if strings.Contains(out, "angryduck_controller_spread_nodes{") || strings.Contains(out, "angryduck_controller_spread_node_missing_bytes{") {
+	if strings.Contains(out, "adhdduck_controller_spread_nodes{") || strings.Contains(out, "adhdduck_controller_spread_node_missing_bytes{") {
 		t.Fatalf("per-image series left behind after the spread ended:\n%s", out)
 	}
-	if !strings.Contains(out, `angryduck_controller_spreads_total{result="complete"}`) {
+	if !strings.Contains(out, `adhdduck_controller_spreads_total{result="complete"}`) {
 		t.Fatal("completion not counted")
 	}
 	history := []string{
-		`angryduck_controller_image_spread_seconds{image="` + img + `",result="complete"}`,
-		`angryduck_controller_image_spread_started_timestamp_seconds{image="` + img + `"}`,
-		`angryduck_controller_image_delivery_seconds{image="` + img + `",node="full",via="kubelet"}`,
-		`angryduck_controller_image_delivered_timestamp_seconds{image="` + img + `",node="w1",via="`,
-		`angryduck_controller_image_received_bytes{image="` + img + `",node="w1",path="`,
-		`angryduck_controller_image_transfer_seconds{image="` + img + `",node="w1",path="`,
+		`adhdduck_controller_image_spread_seconds{image="` + img + `",result="complete"}`,
+		`adhdduck_controller_image_spread_started_timestamp_seconds{image="` + img + `"}`,
+		`adhdduck_controller_image_delivery_seconds{image="` + img + `",node="full",via="kubelet"}`,
+		`adhdduck_controller_image_delivered_timestamp_seconds{image="` + img + `",node="w1",via="`,
+		`adhdduck_controller_image_received_bytes{image="` + img + `",node="w1",path="`,
+		`adhdduck_controller_image_transfer_seconds{image="` + img + `",node="w1",path="`,
 	}
 	for _, want := range history {
 		if !strings.Contains(out, want) {
 			t.Fatalf("image history lacks %s:\n%s", want, out)
 		}
 	}
-	if strings.Contains(out, `angryduck_controller_image_spread_seconds{image="`+img+`",result="running"}`) {
+	if strings.Contains(out, `adhdduck_controller_image_spread_seconds{image="`+img+`",result="running"}`) {
 		t.Fatal("finished spread still shown running")
 	}
 	for _, n := range []string{"w1", "w2", "w3", "w4", "w5", "w6"} {
 		found := false
 		for _, via := range []string{"peer", "registry", "peer+registry"} {
-			if strings.Contains(out, `angryduck_controller_image_delivery_seconds{image="`+img+`",node="`+n+`",via="`+via+`"}`) {
+			if strings.Contains(out, `adhdduck_controller_image_delivery_seconds{image="`+img+`",node="`+n+`",via="`+via+`"}`) {
 				found = true
 			}
 		}

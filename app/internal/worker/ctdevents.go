@@ -6,18 +6,18 @@ import (
 
 	"github.com/containerd/containerd/events"
 
-	"angryduck/internal/logging"
-	"angryduck/internal/metrics"
+	"adhdduck/internal/logging"
+	"adhdduck/internal/metrics"
 )
 
 var (
 	inventoryEventsTotal = metrics.NewCounterVec(
-		"angryduck_worker_inventory_events_total",
+		"adhdduck_worker_inventory_events_total",
 		"containerd events that changed what this node can serve (images created, updated or deleted, content deleted), by topic. Each settles into one fresh inventory report.",
 		"node", "topic",
 	)
 	inventoryWatchUp = metrics.NewGaugeVec(
-		"angryduck_worker_inventory_watch_up",
+		"adhdduck_worker_inventory_watch_up",
 		"1 while this node follows containerd's events (the inventory is event-driven and only resynced slowly), 0 while it falls back to periodic scans.",
 		"node",
 	)
@@ -36,7 +36,7 @@ type EventSubscriber interface {
 
 // InventoryWatch turns containerd's events into inventory reports, so the
 // controller learns of a pull or a removal in about a second instead of at
-// the next periodic scan: kubelet's pulls, which Angry Duck doesn't make,
+// the next periodic scan: kubelet's pulls, which ADHD Duck doesn't make,
 // included. Bursts (a pull creates several image records) settle into one
 // report.
 //
@@ -95,7 +95,7 @@ func (w *InventoryWatch) Run(ctx context.Context) {
 		if time.Since(start) > time.Minute {
 			backoff = time.Second // it had been working: retry fast
 		}
-		logging.Warnf("angryduck-worker[%s]: containerd event stream ended (%v): periodic inventory scans until it's back, retrying in %s", w.nodeID, err, backoff)
+		logging.Warnf("adhdduck-worker[%s]: containerd event stream ended (%v): periodic inventory scans until it's back, retrying in %s", w.nodeID, err, backoff)
 		select {
 		case <-ctx.Done():
 			return

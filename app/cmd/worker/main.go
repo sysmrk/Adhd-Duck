@@ -1,4 +1,4 @@
-// Command angryduck-worker runs on every node (as a DaemonSet pod). It
+// Command adhdduck-worker runs on every node (as a DaemonSet pod). It
 //
 //   - reports disk utilization, local images and its layer inventory to
 //     the controller;
@@ -36,22 +36,22 @@ import (
 
 	"github.com/containerd/containerd"
 
-	"angryduck/internal/config"
-	"angryduck/internal/kube"
-	"angryduck/internal/logging"
-	"angryduck/internal/memlimit"
-	"angryduck/internal/metrics"
-	"angryduck/internal/registryauth"
-	"angryduck/internal/registryclient"
-	"angryduck/internal/sharedtoken"
-	"angryduck/internal/version"
-	"angryduck/internal/worker"
+	"adhdduck/internal/config"
+	"adhdduck/internal/kube"
+	"adhdduck/internal/logging"
+	"adhdduck/internal/memlimit"
+	"adhdduck/internal/metrics"
+	"adhdduck/internal/registryauth"
+	"adhdduck/internal/registryclient"
+	"adhdduck/internal/sharedtoken"
+	"adhdduck/internal/version"
+	"adhdduck/internal/worker"
 )
 
 func main() {
 	envFile := config.String("ENV_FILE", ".env")
 	if err := config.Load(envFile); err != nil {
-		log.Printf("angryduck-worker: warning: failed to load %s: %v", envFile, err)
+		log.Printf("adhdduck-worker: warning: failed to load %s: %v", envFile, err)
 	}
 	if err := config.Validate(); err != nil {
 		log.Fatalf("invalid configuration: %v", err)
@@ -64,20 +64,20 @@ func main() {
 	if nodeID == "" {
 		hostname, err := os.Hostname()
 		if err != nil {
-			log.Fatalf("angryduck-worker: NODE_ID not set and hostname lookup failed: %v", err)
+			log.Fatalf("adhdduck-worker: NODE_ID not set and hostname lookup failed: %v", err)
 		}
 		nodeID = hostname
 	}
 	selfAddress := config.String("SELF_ADDRESS", "")
 	if selfAddress == "" {
-		log.Fatalf("angryduck-worker: SELF_ADDRESS must be set to a controller-reachable host or host:port (e.g. pod IP via downward API)")
+		log.Fatalf("adhdduck-worker: SELF_ADDRESS must be set to a controller-reachable host or host:port (e.g. pod IP via downward API)")
 	}
 	listenAddr := config.String("WORKER_LISTEN_ADDR", ":18081")
 	if !strings.Contains(selfAddress, ":") {
 		selfAddress = selfAddress + ":" + listenPort(listenAddr)
 	}
 	metricsURL := config.String("NODE_EXPORTER_URL", "http://localhost:9100/metrics")
-	controllerURL := config.String("CONTROLLER_URL", "http://angryduck-controller:8080")
+	controllerURL := config.String("CONTROLLER_URL", "http://adhdduck-controller:8080")
 	reportInterval := config.Duration("REPORT_INTERVAL_S", 15)
 	labelRegistry := config.Bool("METRICS_LABEL_REGISTRY", false)
 	preheatAttributionInterval := config.Duration("PREHEAT_ATTRIBUTION_INTERVAL_S", 300)
@@ -88,37 +88,37 @@ func main() {
 		// crictl and ctr were the CLI backends before 1.8.6; both meant
 		// containerd, which is what the worker now talks to directly.
 	default:
-		log.Fatalf("angryduck-worker: CONTAINER_RUNTIME=%s is not supported: Angry Duck needs containerd", runtimeKind)
+		log.Fatalf("adhdduck-worker: CONTAINER_RUNTIME=%s is not supported: ADHD Duck needs containerd", runtimeKind)
 	}
 	runtimeEndpoint := config.String("CONTAINER_RUNTIME_ENDPOINT", "unix:///run/containerd/containerd.sock")
 	credsPath := config.String("REGISTRY_CREDENTIALS_PATH", "")
 	creds, err := registryauth.Load(credsPath)
 	if err != nil {
-		log.Fatalf("angryduck-worker: failed to load registry credentials from %s: %v", credsPath, err)
+		log.Fatalf("adhdduck-worker: failed to load registry credentials from %s: %v", credsPath, err)
 	}
 	if credsPath != "" {
-		log.Printf("angryduck-worker: loaded credentials for %d registr(y/ies) from %s", creds.Count(), credsPath)
+		log.Printf("adhdduck-worker: loaded credentials for %d registr(y/ies) from %s", creds.Count(), credsPath)
 	}
 	// Prefix for the node paths this pod mounts (the state dir, containerd's
 	// config and certs.d). The manifests mount them at the same paths, so
 	// it is empty; it is not a chroot.
 	hostRoot := config.String("HOST_ROOT", "")
-	stateDir := config.String("RESCUE_STATE_DIR", "/var/lib/angryduck")
+	stateDir := config.String("RESCUE_STATE_DIR", "/var/lib/adhdduck")
 	namespace := config.String("RESCUE_CONTAINERD_NAMESPACE", "k8s.io")
 	snapshotter := config.String("CONTAINERD_SNAPSHOTTER", "overlayfs")
 
-	log.Printf("angryduck-worker[%s]: starting: listen=%s self=%s metrics=%s controller=%s report_interval=%s containerd=%s namespace=%s snapshotter=%s",
+	log.Printf("adhdduck-worker[%s]: starting: listen=%s self=%s metrics=%s controller=%s report_interval=%s containerd=%s namespace=%s snapshotter=%s",
 		nodeID, listenAddr, selfAddress, metricsURL, controllerURL, reportInterval, runtimeEndpoint, namespace, snapshotter)
 
 	client, err := containerd.New(strings.TrimPrefix(runtimeEndpoint, "unix://"),
 		containerd.WithDefaultNamespace(namespace), containerd.WithTimeout(10*time.Second),
 		containerd.WithDialOpts(worker.ContainerdDialOptions(nodeID)))
 	if err != nil {
-		log.Fatalf("angryduck-worker[%s]: connecting to containerd at %s: %v", nodeID, runtimeEndpoint, err)
+		log.Fatalf("adhdduck-worker[%s]: connecting to containerd at %s: %v", nodeID, runtimeEndpoint, err)
 	}
 	defer client.Close()
 	if v, err := client.Version(context.Background()); err == nil {
-		log.Printf("angryduck-worker[%s]: connected to containerd %s", nodeID, v.Version)
+		log.Printf("adhdduck-worker[%s]: connected to containerd %s", nodeID, v.Version)
 	}
 
 	rt := worker.NewRuntime(client.Conn(), creds)
@@ -131,18 +131,18 @@ func main() {
 	// listing cache is shared too.
 	store := worker.NewContainerdStore(client, namespace, snapshotter)
 	if dir := store.UseBlobDir(config.String("CONTAINERD_ROOT", ""), filepath.Join(hostRoot, "/etc/containerd/config.toml")); dir != "" {
-		log.Printf("angryduck-worker[%s]: reading blobs directly from %s", nodeID, dir)
+		log.Printf("adhdduck-worker[%s]: reading blobs directly from %s", nodeID, dir)
 	} else {
-		log.Printf("angryduck-worker[%s]: containerd's content store isn't mounted (set CONTAINERD_ROOT to where it is): serving blobs through containerd's content API", nodeID)
+		log.Printf("adhdduck-worker[%s]: containerd's content store isn't mounted (set CONTAINERD_ROOT to where it is): serving blobs through containerd's content API", nodeID)
 	}
-	token, tokenErr := sharedtoken.Load(config.String("RESCUE_TOKEN_PATH", "/etc/angryduck/rescue-token/token"))
+	token, tokenErr := sharedtoken.Load(config.String("RESCUE_TOKEN_PATH", "/etc/adhdduck/rescue-token/token"))
 	if tokenErr != nil {
-		log.Printf("angryduck-worker[%s]: WARNING: no usable token (%v): rescue, propagation and the mirror's peer lookups are off, and /pull is unauthenticated", nodeID, tokenErr)
+		log.Printf("adhdduck-worker[%s]: WARNING: no usable token (%v): rescue, propagation and the mirror's peer lookups are off, and /pull is unauthenticated", nodeID, tokenErr)
 		token = ""
 	}
 	authMode, err := sharedtoken.ParseMode(config.String("AUTH_MODE", ""))
 	if err != nil {
-		log.Fatalf("angryduck-worker[%s]: %v", nodeID, err)
+		log.Fatalf("adhdduck-worker[%s]: %v", nodeID, err)
 	}
 	auth := &sharedtoken.Auth{Token: token, Mode: authMode}
 	reporter.SetToken(token)
@@ -153,7 +153,7 @@ func main() {
 	var tracker *worker.LayerTracker
 	if store != nil && config.Bool("LAYER_INVENTORY_ENABLED", true) {
 		interval := config.Duration("LAYER_SCAN_INTERVAL_S", 60)
-		log.Printf("angryduck-worker[%s]: layer inventory enabled: scan_interval=%s", nodeID, interval)
+		log.Printf("adhdduck-worker[%s]: layer inventory enabled: scan_interval=%s", nodeID, interval)
 		tracker = worker.NewLayerTracker(store, nodeID, interval)
 		reporter.SetLayerTracker(tracker)
 	}
@@ -172,7 +172,7 @@ func main() {
 				tracker.SetInterval(scan)
 			}
 		}
-		log.Printf("angryduck-worker[%s]: inventory follows containerd events (namespace=%s): resync=%s, scans every %s while the stream is down", nodeID, namespace, resync, scan)
+		log.Printf("adhdduck-worker[%s]: inventory follows containerd events (namespace=%s): resync=%s, scans every %s while the stream is down", nodeID, namespace, resync, scan)
 		go worker.NewInventoryWatch(client, namespace, nodeID, reporter.Kick, live).Run(ctx)
 	}
 	metrics.PublishBuildInfo("worker", version.Version, nodeID)
@@ -200,7 +200,7 @@ func main() {
 		sp.OnFinalize(reporter.Kick)
 		sp.OnStale(reporter.Kick)
 		extra = append(extra, sp.Register)
-		log.Printf("angryduck-worker[%s]: spread enabled: platform=%s transfer_timeout=%s", nodeID, platform, timeout)
+		log.Printf("adhdduck-worker[%s]: spread enabled: platform=%s transfer_timeout=%s", nodeID, platform, timeout)
 	}
 
 	// Images being pulled or received right now: cleanup and repair never
@@ -224,10 +224,10 @@ func main() {
 			extra = append(extra, repair.Register)
 		}
 		reporter.SetExclude(repair.Broken)
-		log.Printf("angryduck-worker[%s]: image repair enabled: interval=%s, from peers=%t then the registry", nodeID, interval, tokenErr == nil)
+		log.Printf("adhdduck-worker[%s]: image repair enabled: interval=%s, from peers=%t then the registry", nodeID, interval, tokenErr == nil)
 		go repair.Run(ctx)
 	} else if store != nil {
-		log.Printf("angryduck-worker[%s]: image repair disabled (IMAGE_REPAIR_ENABLED=false): an image that can't start containers stays until removed by hand", nodeID)
+		log.Printf("adhdduck-worker[%s]: image repair disabled (IMAGE_REPAIR_ENABLED=false): an image that can't start containers stays until removed by hand", nodeID)
 	}
 
 	if store != nil && config.Bool("GC_ENABLED", true) {
@@ -253,7 +253,7 @@ func main() {
 		gc.OnDone(reporter.Kick)
 		go gc.Run(ctx)
 	} else if store != nil {
-		log.Printf("angryduck-worker[%s]: image cleanup disabled (GC_ENABLED=false): kubelet's own image GC is all there is", nodeID)
+		log.Printf("adhdduck-worker[%s]: image cleanup disabled (GC_ENABLED=false): kubelet's own image GC is all there is", nodeID)
 	}
 
 	var hosts *worker.HostsConfig
@@ -270,7 +270,7 @@ func main() {
 			mirrorAddr = net.JoinHostPort(podIP, port)
 		}
 		if mirrorOn && mirrorAddr == "" {
-			log.Printf("angryduck-worker[%s]: WARNING: mirror off: set POD_IP (downward API) or MIRROR_ADVERTISE_ADDR", nodeID)
+			log.Printf("adhdduck-worker[%s]: WARNING: mirror off: set POD_IP (downward API) or MIRROR_ADVERTISE_ADDR", nodeID)
 			mirrorOn = false
 		}
 		hosts = &worker.HostsConfig{
@@ -287,9 +287,9 @@ func main() {
 			extra = append(extra, m.RegisterPeer)
 			mirrorSrv = &http.Server{Addr: mirrorListen, Handler: m.Handler(), ReadHeaderTimeout: 10 * time.Second}
 			go func() {
-				log.Printf("angryduck-worker[%s]: mirror listening on %s, containerd reaches it at %s", nodeID, mirrorListen, mirrorAddr)
+				log.Printf("adhdduck-worker[%s]: mirror listening on %s, containerd reaches it at %s", nodeID, mirrorListen, mirrorAddr)
 				if err := mirrorSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-					log.Printf("angryduck-worker[%s]: WARNING: mirror stopped: %v", nodeID, err)
+					log.Printf("adhdduck-worker[%s]: WARNING: mirror stopped: %v", nodeID, err)
 				}
 			}()
 		}
@@ -314,14 +314,14 @@ func main() {
 	httpServer := &http.Server{Addr: listenAddr, Handler: worker.NewServer(auth, puller, rescue, extra...)}
 	go func() {
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("angryduck-worker[%s]: http server failed: %v", nodeID, err)
+			log.Fatalf("adhdduck-worker[%s]: http server failed: %v", nodeID, err)
 		}
 	}()
 
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 	<-sigCh
-	log.Printf("angryduck-worker[%s]: shutting down", nodeID)
+	log.Printf("adhdduck-worker[%s]: shutting down", nodeID)
 	shutdown(nodeID, cancel, hosts, mirrorSrv, httpServer, store, pins, filepath.Join(hostRoot, stateDir))
 }
 
@@ -341,7 +341,7 @@ func shutdown(nodeID string, cancel context.CancelFunc, hosts *worker.HostsConfi
 	store *worker.ContainerdStore, pins *worker.Pins, stateDir string) {
 	if hosts != nil {
 		if n := hosts.RemoveOwn(); n > 0 {
-			log.Printf("angryduck-worker[%s]: removed %d hosts.toml file(s): containerd pulls from registries directly", nodeID, n)
+			log.Printf("adhdduck-worker[%s]: removed %d hosts.toml file(s): containerd pulls from registries directly", nodeID, n)
 		}
 	}
 	cancel() // stop the loops
@@ -357,13 +357,13 @@ func shutdown(nodeID string, cancel context.CancelFunc, hosts *worker.HostsConfi
 	if !uninstalling(ctx, nodeID) {
 		return
 	}
-	log.Printf("angryduck-worker[%s]: DaemonSet deleted: removing this node's Angry Duck state", nodeID)
+	log.Printf("adhdduck-worker[%s]: DaemonSet deleted: removing this node's ADHD Duck state", nodeID)
 	if store != nil && pins != nil {
 		worker.CleanupLeftovers(ctx, store, pins, nodeID)
 	}
 	for _, f := range []string{"rescue-pins.json", "image-usage.json"} {
 		if err := os.Remove(filepath.Join(stateDir, f)); err != nil && !os.IsNotExist(err) {
-			log.Printf("angryduck-worker[%s]: removing %s: %v", nodeID, f, err)
+			log.Printf("adhdduck-worker[%s]: removing %s: %v", nodeID, f, err)
 		}
 	}
 	// The directory is a mount point inside the pod; empty it is all that
@@ -373,16 +373,16 @@ func shutdown(nodeID string, cancel context.CancelFunc, hosts *worker.HostsConfi
 // uninstalling asks the API server whether this pod's DaemonSet is
 // deleted or being deleted.
 func uninstalling(ctx context.Context, nodeID string) bool {
-	name := config.String("DAEMONSET_NAME", "angryduck-worker")
+	name := config.String("DAEMONSET_NAME", "adhdduck-worker")
 	ns := config.String("POD_NAMESPACE", kube.Namespace())
 	c, err := kube.InCluster()
 	if err != nil || ns == "" {
-		log.Printf("angryduck-worker[%s]: can't check whether DaemonSet %s is being deleted (%v); keeping node state", nodeID, name, err)
+		log.Printf("adhdduck-worker[%s]: can't check whether DaemonSet %s is being deleted (%v); keeping node state", nodeID, name, err)
 		return false
 	}
 	gone, err := c.DaemonSetGone(ctx, ns, name)
 	if err != nil {
-		log.Printf("angryduck-worker[%s]: checking DaemonSet %s/%s: %v; keeping node state", nodeID, ns, name, err)
+		log.Printf("adhdduck-worker[%s]: checking DaemonSet %s/%s: %v; keeping node state", nodeID, ns, name, err)
 		return false
 	}
 	return gone
@@ -397,7 +397,7 @@ func mirrorListenAddr(addr, nodeID string) string {
 		return ":18082"
 	}
 	if host == "127.0.0.1" || host == "localhost" || host == "::1" {
-		log.Printf("angryduck-worker[%s]: MIRROR_LISTEN_ADDR=%s is loopback, which containerd can't reach from the host network; listening on :%s", nodeID, addr, port)
+		log.Printf("adhdduck-worker[%s]: MIRROR_LISTEN_ADDR=%s is loopback, which containerd can't reach from the host network; listening on :%s", nodeID, addr, port)
 		return ":" + port
 	}
 	return addr
@@ -406,7 +406,7 @@ func mirrorListenAddr(addr, nodeID string) string {
 func randomToken() string {
 	b := make([]byte, 32)
 	if _, err := crand.Read(b); err != nil {
-		log.Fatalf("angryduck-worker: random token: %v", err)
+		log.Fatalf("adhdduck-worker: random token: %v", err)
 	}
 	return hex.EncodeToString(b)
 }
@@ -420,7 +420,7 @@ func newRescue(ctx context.Context, nodeID, hostRoot, stateDir string, store *wo
 	maxConcurrent := config.Int("RESCUE_NODE_MAX_CONCURRENT", 2)
 	pinTTL := config.Duration("RESCUE_PIN_TTL_S", 3600)
 	pinFile := filepath.Join(hostRoot, stateDir, "rescue-pins.json")
-	log.Printf("angryduck-worker[%s]: rescue enabled: platform=%s max_concurrent=%d pin_ttl=%s pin_file=%s", nodeID, platform, maxConcurrent, pinTTL, pinFile)
+	log.Printf("adhdduck-worker[%s]: rescue enabled: platform=%s max_concurrent=%d pin_ttl=%s pin_file=%s", nodeID, platform, maxConcurrent, pinTTL, pinFile)
 	pins := worker.NewPins(store, nodeID, pinTTL, pinFile)
 	cleanupCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 	worker.CleanupLeftovers(cleanupCtx, store, pins, nodeID)

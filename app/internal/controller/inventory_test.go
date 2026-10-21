@@ -6,7 +6,7 @@ import (
 	"time"
 	"unsafe"
 
-	"angryduck/internal/model"
+	"adhdduck/internal/model"
 )
 
 func invReport(node, hash string, omitted bool, images ...string) model.WorkerReport {

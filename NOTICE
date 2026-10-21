@@ -1,0 +1,14 @@
+ADHD Duck
+
+This project is derived from Angry Duck by hatam-abolghasemi:
+https://github.com/hatam-abolghasemi/Angry-Duck
+
+The fork was based on upstream commit
+5102a56b8037bce1b249d2e3bbfcd32e55f66d8f (version 1.8.15).
+The upstream Apache License, Version 2.0, is retained in LICENSE.
+Original authorship and any upstream copyright notices are preserved.
+
+Fork modifications include configuration validation, bounded HTTP inputs,
+digest binding, seed capacity safeguards, liveness and GC telemetry fixes,
+additional regression tests, and ADHD Duck naming and release coordinates.
+See CHANGELOG.md for the maintained change history.

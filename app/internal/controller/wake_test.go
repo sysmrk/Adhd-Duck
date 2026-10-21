@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"angryduck/internal/kube"
+	"adhdduck/internal/kube"
 )
 
 func fastWake(t *testing.T) {

@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"angryduck/internal/blobship"
-	"angryduck/internal/model"
+	"adhdduck/internal/blobship"
+	"adhdduck/internal/model"
 )
 
 const (

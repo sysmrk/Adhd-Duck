@@ -11,17 +11,17 @@ import (
 	"sync"
 	"time"
 
-	"angryduck/internal/imageref"
-	"angryduck/internal/layerindex"
-	"angryduck/internal/logging"
-	"angryduck/internal/metrics"
-	"angryduck/internal/model"
-	"angryduck/internal/sharedtoken"
+	"adhdduck/internal/imageref"
+	"adhdduck/internal/layerindex"
+	"adhdduck/internal/logging"
+	"adhdduck/internal/metrics"
+	"adhdduck/internal/model"
+	"adhdduck/internal/sharedtoken"
 )
 
 // pullOrdersTotal counts /pull requests the controller has sent to
 // workers, split by node and whether the worker accepted it. This is the
-// controller-side half of the pull story; angryduck_worker_pulls_total
+// controller-side half of the pull story; adhdduck_worker_pulls_total
 // (see worker/puller.go) is the worker-side half.
 //
 // registry is only populated when METRICS_LABEL_REGISTRY is enabled —
@@ -31,7 +31,7 @@ import (
 // manifest), "repo" (fallback: nodes with any tag of the repo first) or
 // "utilization" (fallback when locality is off).
 var seedRankingsTotal = metrics.NewCounterVec(
-	"angryduck_controller_seed_rankings_total",
+	"adhdduck_controller_seed_rankings_total",
 	"Seed selections, by what ranked the candidates: layers (bytes each node already holds), repo (fallback) or utilization (fallback).",
 	"basis",
 )
@@ -39,7 +39,7 @@ var seedRankingsTotal = metrics.NewCounterVec(
 // seedMissingBytes is, per seed ordered for the latest image, how many
 // bytes of the image it lacked: what its registry pull downloads.
 var seedMissingBytes = metrics.NewGaugeVec(
-	"angryduck_controller_seed_missing_bytes",
+	"adhdduck_controller_seed_missing_bytes",
 	"Bytes of the latest seeded image each seed node lacked when ordered (its registry download). Only set when layer ranking was used.",
 	"node",
 )
@@ -50,7 +50,7 @@ type LayerResolver interface {
 }
 
 var pullOrdersTotal = metrics.NewCounterVec(
-	"angryduck_controller_pull_orders_total",
+	"adhdduck_controller_pull_orders_total",
 	"Total pull orders sent to workers, by node and result. registry is only populated when METRICS_LABEL_REGISTRY=true.",
 	"node", "result", "registry",
 )
@@ -134,7 +134,7 @@ func (rk *Ranker) Seeds(image string) map[string]time.Time {
 // is a list of case-sensitive substrings (e.g. "master", "control-plane");
 // any worker whose NodeID contains one is still tracked and still reports
 // in as normal — it's simply never selected as a preheat target. This
-// exists because master/control-plane nodes still need Angry Duck's
+// exists because master/control-plane nodes still need ADHD Duck's
 // worker running on them for its disk-utilization/locality reporting, but
 // pass nil here (or an empty slice) to disable the behavior entirely.
 //
@@ -213,24 +213,24 @@ func (rk *Ranker) OrderNow(image string) []string {
 func (rk *Ranker) orderLowestN(image string) []string {
 	fresh := rk.registry.FreshWorkers()
 	if len(fresh) == 0 {
-		logging.Warnf("angryduck-controller: cannot order preheat for image=%s: zero fresh workers", image)
+		logging.Warnf("adhdduck-controller: cannot order preheat for image=%s: zero fresh workers", image)
 		return nil
 	}
 
 	eligible := rk.CapacityEligible(rk.excludeMatching(fresh))
 	if len(eligible) == 0 {
-		logging.Warnf("angryduck-controller: cannot order preheat for image=%s: %d fresh worker(s) reported, none pass node exclusions (%v) and capacity <= %.2f",
+		logging.Warnf("adhdduck-controller: cannot order preheat for image=%s: %d fresh worker(s) reported, none pass node exclusions (%v) and capacity <= %.2f",
 			image, len(fresh), rk.excludeSubstrings, rk.maxUtilization)
 		return nil
 	}
 
 	candidates, remaining := rk.notYetOrdered(image, eligible)
 	if remaining <= 0 {
-		logging.Debugf("angryduck-controller: image=%s already has its %d seed(s), nothing new to do right now", image, rk.topN)
+		logging.Debugf("adhdduck-controller: image=%s already has its %d seed(s), nothing new to do right now", image, rk.topN)
 		return nil
 	}
 	if len(candidates) == 0 {
-		logging.Debugf("angryduck-controller: all %d eligible worker(s) already ordered for image=%s, nothing new to do right now", len(eligible), image)
+		logging.Debugf("adhdduck-controller: all %d eligible worker(s) already ordered for image=%s, nothing new to do right now", len(eligible), image)
 		return nil
 	}
 
@@ -242,10 +242,10 @@ func (rk *Ranker) orderLowestN(image string) []string {
 	}
 	chosen := ranked[:n]
 
-	logging.Debugf("angryduck-controller: ranked %d fresh worker(s) (%d eligible after exclusions, %d not yet ordered), choosing top %d (image locality, then utilization) for image=%s",
+	logging.Debugf("adhdduck-controller: ranked %d fresh worker(s) (%d eligible after exclusions, %d not yet ordered), choosing top %d (image locality, then utilization) for image=%s",
 		len(fresh), len(eligible), len(candidates), n, image)
 	for _, w := range eligible {
-		logging.Debugf("angryduck-controller: candidate node=%s utilization=%.1f%%", w.NodeID, w.Utilization*100)
+		logging.Debugf("adhdduck-controller: candidate node=%s utilization=%.1f%%", w.NodeID, w.Utilization*100)
 	}
 
 	rk.mu.Lock()
@@ -329,7 +329,7 @@ func (rk *Ranker) rank(image string, candidates []*workerEntry) (ranked []*worke
 		layers, err := rk.resolver.Layers(ctx, image, rk.platform)
 		cancel()
 		if err != nil {
-			logging.Warnf("angryduck-controller: layer ranking unavailable for image=%s, falling back to repo locality: %v", image, err)
+			logging.Warnf("adhdduck-controller: layer ranking unavailable for image=%s, falling back to repo locality: %v", image, err)
 		} else {
 			missing = make(map[string]int64, len(candidates))
 			var known, unknown []*workerEntry
@@ -349,7 +349,7 @@ func (rk *Ranker) rank(image string, candidates []*workerEntry) (ranked []*worke
 					total += l.Size
 				}
 				for _, w := range known {
-					logging.Debugf("angryduck-controller: seed candidate node=%s lacks %d of %d bytes of image=%s (utilization %.1f%%)",
+					logging.Debugf("adhdduck-controller: seed candidate node=%s lacks %d of %d bytes of image=%s (utilization %.1f%%)",
 						w.NodeID, missing[w.NodeID], total, image, w.Utilization*100)
 				}
 				seedRankingsTotal.Inc("layers")
@@ -402,7 +402,7 @@ func (rk *Ranker) rankByLocality(image string, candidates []*workerEntry) []*wor
 	if len(withRepo) == 0 {
 		return without
 	}
-	logging.Debugf("angryduck-controller: %d of %d candidate(s) already have repo=%s locally (any tag), prioritizing them for image=%s",
+	logging.Debugf("adhdduck-controller: %d of %d candidate(s) already have repo=%s locally (any tag), prioritizing them for image=%s",
 		len(withRepo), len(candidates), repo, image)
 	return append(withRepo, without...)
 }
@@ -427,7 +427,7 @@ func (rk *Ranker) excludeMatching(workers []*workerEntry) []*workerEntry {
 			}
 		}
 		if excluded {
-			logging.Debugf("angryduck-controller: excluding node=%s from preheat selection (matches excluded-node substring)", w.NodeID)
+			logging.Debugf("adhdduck-controller: excluding node=%s from preheat selection (matches excluded-node substring)", w.NodeID)
 			continue
 		}
 		kept = append(kept, w)
@@ -443,13 +443,13 @@ func (rk *Ranker) sendPullOrder(nodeID, addr, image string) {
 	order := model.PullOrder{Image: image, OrderedAt: time.Now()}
 	body, err := json.Marshal(order)
 	if err != nil {
-		logging.Errorf("angryduck-controller: failed to marshal pull order for node=%s: %v", nodeID, err)
+		logging.Errorf("adhdduck-controller: failed to marshal pull order for node=%s: %v", nodeID, err)
 		return
 	}
 	url := "http://" + addr + "/pull"
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
-		logging.Errorf("angryduck-controller: failed to build pull request for node=%s: %v", nodeID, err)
+		logging.Errorf("adhdduck-controller: failed to build pull request for node=%s: %v", nodeID, err)
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
@@ -457,19 +457,19 @@ func (rk *Ranker) sendPullOrder(nodeID, addr, image string) {
 
 	resp, err := rk.httpClient.Do(req)
 	if err != nil {
-		logging.Warnf("angryduck-controller: pull order to node=%s addr=%s failed: %v", nodeID, addr, err)
+		logging.Warnf("adhdduck-controller: pull order to node=%s addr=%s failed: %v", nodeID, addr, err)
 		pullOrdersTotal.Inc(nodeID, "failure", registryLabel)
 		rk.releaseSlot(image)
 		return
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 300 {
-		logging.Warnf("angryduck-controller: pull order to node=%s addr=%s rejected: status=%d", nodeID, addr, resp.StatusCode)
+		logging.Warnf("adhdduck-controller: pull order to node=%s addr=%s rejected: status=%d", nodeID, addr, resp.StatusCode)
 		pullOrdersTotal.Inc(nodeID, "failure", registryLabel)
 		rk.releaseSlot(image)
 		return
 	}
-	logging.Infof("angryduck-controller: ordered node=%s to pull image=%s", nodeID, image)
+	logging.Infof("adhdduck-controller: ordered node=%s to pull image=%s", nodeID, image)
 	pullOrdersTotal.Inc(nodeID, "success", registryLabel)
 }
 

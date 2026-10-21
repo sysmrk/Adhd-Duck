@@ -5,7 +5,7 @@
 // before doing anything else. `ctr images pull nginx:latest` does no such
 // expansion — it tries to parse "nginx" as a registry hostname and
 // ":latest" as a port number, and fails with a confusing
-// `invalid port ":latest" after host` error. Since Angry Duck's worker
+// `invalid port ":latest" after host` error. Since ADHD Duck's worker
 // shells out to `ctr` by default, any caller (a CI pipeline, a person
 // testing the webhook by hand) who reasonably expects Docker-style short
 // references to just work will hit this. Normalize() closes that gap by
@@ -32,7 +32,7 @@ import "strings"
 //     already maximally specific and appending a tag would be invalid.
 //
 // This mirrors the effect of Docker's reference.ParseNormalizedNamed
-// without pulling in that dependency, since Angry Duck only needs this one
+// without pulling in that dependency, since ADHD Duck only needs this one
 // behavior from it.
 func Normalize(ref string) string {
 	ref = strings.TrimSpace(ref)

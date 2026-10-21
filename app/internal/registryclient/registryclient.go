@@ -29,10 +29,10 @@ import (
 	"sync"
 	"time"
 
-	"angryduck/internal/blobship"
-	"angryduck/internal/imageref"
-	"angryduck/internal/layerindex"
-	"angryduck/internal/registryauth"
+	"adhdduck/internal/blobship"
+	"adhdduck/internal/imageref"
+	"adhdduck/internal/layerindex"
+	"adhdduck/internal/registryauth"
 )
 
 const acceptManifests = blobship.MediaTypeOCIIndex + ", " + blobship.MediaTypeDockerList + ", " +
@@ -358,7 +358,7 @@ func (e *StatusError) Error() string {
 
 // Availability classifies the outcome of a registry request: "ok" (no
 // error), "missing" (the registry says the manifest or blob doesn't
-// exist), "denied" (the registry refused Angry Duck's credentials, or
+// exist), "denied" (the registry refused ADHD Duck's credentials, or
 // wants credentials and none are configured) or "unreachable" (no usable
 // answer: network errors, timeouts, rate limits, server errors).
 func Availability(err error) string {

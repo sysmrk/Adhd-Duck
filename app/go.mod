@@ -1,4 +1,4 @@
-module angryduck
+module adhdduck
 
 go 1.22.2
 

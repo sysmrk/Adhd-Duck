@@ -68,10 +68,10 @@ func TestCountersStartAtZero(t *testing.T) {
 	NewPuller(newFakeRuntime(), node, false)
 	out := scrapeMetrics(t)
 	for _, want := range []string{
-		`angryduck_worker_spread_transfers_total{node="` + node + `",path="registry",result="ok"} 0`,
-		`angryduck_worker_spread_transfer_milliseconds_total{node="` + node + `",path="peer"} 0`,
-		`angryduck_worker_mirror_requests_total{node="` + node + `",kind="blob",result="miss"} 0`,
-		`angryduck_worker_pulls_total{node="` + node + `",result="failure",registry=""} 0`,
+		`adhdduck_worker_spread_transfers_total{node="` + node + `",path="registry",result="ok"} 0`,
+		`adhdduck_worker_spread_transfer_milliseconds_total{node="` + node + `",path="peer"} 0`,
+		`adhdduck_worker_mirror_requests_total{node="` + node + `",kind="blob",result="miss"} 0`,
+		`adhdduck_worker_pulls_total{node="` + node + `",result="failure",registry=""} 0`,
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing %s", want)

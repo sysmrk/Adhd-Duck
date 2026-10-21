@@ -1,7 +1,7 @@
 package worker
 
 import (
-	"angryduck/internal/httpinput"
+	"adhdduck/internal/httpinput"
 	"bytes"
 	"compress/gzip"
 	"context"
@@ -19,27 +19,27 @@ import (
 	"sync"
 	"time"
 
-	"angryduck/internal/blobship"
-	"angryduck/internal/imageref"
-	"angryduck/internal/logging"
-	"angryduck/internal/metrics"
-	"angryduck/internal/model"
-	"angryduck/internal/sharedtoken"
+	"adhdduck/internal/blobship"
+	"adhdduck/internal/imageref"
+	"adhdduck/internal/logging"
+	"adhdduck/internal/metrics"
+	"adhdduck/internal/model"
+	"adhdduck/internal/sharedtoken"
 )
 
 var (
 	rescuesTotal = metrics.NewCounterVec(
-		"angryduck_worker_rescues_total",
+		"adhdduck_worker_rescues_total",
 		"Images this node was ordered to fetch from a peer, by reason (\"rescue\" for a stuck pod, \"propagate\" after a push) and result.",
 		"node", "reason", "result",
 	)
 	rescueBytesTotal = metrics.NewCounterVec(
-		"angryduck_worker_rescue_bytes_total",
+		"adhdduck_worker_rescue_bytes_total",
 		"Bytes shipped for rescues (blobs and compressed snapshots). direction is \"served\" (this node was the source) or \"received\".",
 		"node", "direction",
 	)
 	rescueLayersTotal = metrics.NewCounterVec(
-		"angryduck_worker_rescue_layers_total",
+		"adhdduck_worker_rescue_layers_total",
 		"Layers of rescued images by how this node got them: \"present\" (snapshot already here), \"blob\" or \"snapshot\".",
 		"node", "method",
 	)
@@ -203,11 +203,11 @@ func (rs *Rescue) receive(ctx context.Context, order model.RescueOrder) model.Re
 		// repoints the name once the new copy is unpacked.
 		h, broken := brokenImage(ctx, rs.store, order.Image, rs.platform)
 		if !broken {
-			logging.Infof("angryduck-worker[%s]: rescue image=%s: already present, nothing to ship", rs.nodeID, order.Image)
+			logging.Infof("adhdduck-worker[%s]: rescue image=%s: already present, nothing to ship", rs.nodeID, order.Image)
 			rescuesTotal.Inc(rs.nodeID, order.Reason, "already_present")
 			return model.RescueResult{OK: true}
 		}
-		logging.Warnf("angryduck-worker[%s]: rescue image=%s: registered here but can't start containers (%s): receiving it again",
+		logging.Warnf("adhdduck-worker[%s]: rescue image=%s: registered here but can't start containers (%s): receiving it again",
 			rs.nodeID, order.Image, h)
 	}
 	if len(order.Sources) == 0 {
@@ -232,17 +232,17 @@ func (rs *Rescue) receive(ctx context.Context, order model.RescueOrder) model.Re
 	var errs []string
 	for primary, src := range order.Sources {
 		if err := getPlan(primary); err != nil {
-			logging.Warnf("angryduck-worker[%s]: rescue image=%s: plan from node=%s failed: %v", rs.nodeID, order.Image, src.NodeID, err)
+			logging.Warnf("adhdduck-worker[%s]: rescue image=%s: plan from node=%s failed: %v", rs.nodeID, order.Image, src.NodeID, err)
 			errs = append(errs, src.NodeID+": plan: "+err.Error())
 			continue
 		}
 		res, err := rs.receiveFrom(ctx, order, primary, plans, getPlan)
 		if err != nil {
-			logging.Warnf("angryduck-worker[%s]: rescue image=%s with node=%s as primary source failed: %v", rs.nodeID, order.Image, src.NodeID, err)
+			logging.Warnf("adhdduck-worker[%s]: rescue image=%s with node=%s as primary source failed: %v", rs.nodeID, order.Image, src.NodeID, err)
 			errs = append(errs, src.NodeID+": "+err.Error())
 			continue
 		}
-		logging.Infof("angryduck-worker[%s]: %s: got image=%s from %s: %d blob(s), %d snapshot(s), %d bytes in %s",
+		logging.Infof("adhdduck-worker[%s]: %s: got image=%s from %s: %d blob(s), %d snapshot(s), %d bytes in %s",
 			rs.nodeID, order.Reason, order.Image, res.Source, res.Blobs, res.Snapshots, res.Bytes, time.Since(start).Round(time.Millisecond))
 		rescuesTotal.Inc(rs.nodeID, order.Reason, "success")
 		if rs.onSuccess != nil {
@@ -306,7 +306,7 @@ func (rs *Rescue) receiveFrom(ctx context.Context, order model.RescueOrder, prim
 	if err != nil {
 		return model.RescueResult{}, err
 	}
-	logging.Infof("angryduck-worker[%s]: rescue image=%s primary=%s: %d layer(s) already here, %d by blob, %d by snapshot (last resort), %d base import(s), %d blob(s) to ship",
+	logging.Infof("adhdduck-worker[%s]: rescue image=%s primary=%s: %d layer(s) already here, %d by blob, %d by snapshot (last resort), %d base import(s), %d blob(s) to ship",
 		rs.nodeID, order.Image, order.Sources[primary].NodeID, asm.Present, asm.BlobLayers, asm.SnapshotLayers, len(asm.Steps)-asm.SnapshotCount(), asm.BlobCount())
 
 	used := map[int]bool{primary: true}
@@ -316,7 +316,7 @@ func (rs *Rescue) receiveFrom(ctx context.Context, order model.RescueOrder, prim
 		if len(temps) > 0 {
 			cctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			if err := rs.store.DeleteImages(cctx, temps...); err != nil {
-				logging.Warnf("angryduck-worker[%s]: removing temporary base image(s) %v: %v", rs.nodeID, temps, err)
+				logging.Warnf("adhdduck-worker[%s]: removing temporary base image(s) %v: %v", rs.nodeID, temps, err)
 			}
 			cancel()
 		}
@@ -409,7 +409,7 @@ func (rs *Rescue) newHolds(ctx context.Context) (*rescueHolds, error) {
 	if !ok {
 		return &rescueHolds{}, nil
 	}
-	lease := "angryduck-rescue-" + randomSuffix()
+	lease := "adhdduck-rescue-" + randomSuffix()
 	if err := h.CreateLease(ctx, lease, time.Hour); err != nil {
 		return nil, fmt.Errorf("creating lease: %w", err)
 	}
@@ -497,7 +497,7 @@ func brokenImage(ctx context.Context, store blobship.Store, image, platform stri
 
 // baseImagePrefix names the temporary images a base step imports. They
 // are removed right after the rescue, and at startup if a crash left any.
-const baseImagePrefix = "angryduck.local/rescue-base/"
+const baseImagePrefix = "adhdduck.local/rescue-base/"
 
 // importMerged pipes one archive into containerd's import: top named as
 // name, the inline blobs, then the blobs each source exports (streamed
@@ -735,7 +735,7 @@ func (rs *Rescue) HandlePlan(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			// Not fatal: without it, the receiver just won't ask this node
 			// for snapshots.
-			logging.Warnf("angryduck-worker[%s]: listing snapshots for plan of %s: %v", rs.nodeID, plan.Image, err)
+			logging.Warnf("adhdduck-worker[%s]: listing snapshots for plan of %s: %v", rs.nodeID, plan.Image, err)
 		}
 		for i := range plan.Layers {
 			plan.Layers[i].BlobPresent = have[plan.Layers[i].Blob.Digest]
@@ -786,12 +786,12 @@ func (rs *Rescue) HandleExport(w http.ResponseWriter, r *http.Request) {
 	err = blobship.WriteArchive(r.Context(), cw, rs.store, plan, blobs)
 	rescueBytesTotal.Add(cw.n, rs.nodeID, "served")
 	if err != nil {
-		logging.Warnf("angryduck-worker[%s]: export image=%s to %s failed after %d bytes: %v", rs.nodeID, plan.Image, r.RemoteAddr, cw.n, err)
+		logging.Warnf("adhdduck-worker[%s]: export image=%s to %s failed after %d bytes: %v", rs.nodeID, plan.Image, r.RemoteAddr, cw.n, err)
 		// The 200 is already on the wire. Cut the connection so the
 		// receiver sees a truncated body, never a clean end of archive.
 		panic(http.ErrAbortHandler)
 	}
-	logging.Infof("angryduck-worker[%s]: exported %d blob(s) of image=%s to %s (%d bytes)", rs.nodeID, len(blobs), plan.Image, r.RemoteAddr, cw.n)
+	logging.Infof("adhdduck-worker[%s]: exported %d blob(s) of image=%s to %s (%d bytes)", rs.nodeID, len(blobs), plan.Image, r.RemoteAddr, cw.n)
 }
 
 // HandleSnapshotExport streams one layer's snapshot directory as a
@@ -854,10 +854,10 @@ func (rs *Rescue) HandleSnapshotExport(w http.ResponseWriter, r *http.Request) {
 	}
 	rescueBytesTotal.Add(cw.n, rs.nodeID, "served")
 	if err != nil {
-		logging.Warnf("angryduck-worker[%s]: snapshot export %s of image=%s to %s failed after %d bytes: %v", rs.nodeID, req.ChainID, plan.Image, r.RemoteAddr, cw.n, err)
+		logging.Warnf("adhdduck-worker[%s]: snapshot export %s of image=%s to %s failed after %d bytes: %v", rs.nodeID, req.ChainID, plan.Image, r.RemoteAddr, cw.n, err)
 		panic(http.ErrAbortHandler) // truncate: the receiver's gzip check then fails
 	}
-	logging.Infof("angryduck-worker[%s]: exported snapshot %s (layer %d) of image=%s to %s (%d bytes compressed)", rs.nodeID, req.ChainID, i, plan.Image, r.RemoteAddr, cw.n)
+	logging.Infof("adhdduck-worker[%s]: exported snapshot %s (layer %d) of image=%s to %s (%d bytes compressed)", rs.nodeID, req.ChainID, i, plan.Image, r.RemoteAddr, cw.n)
 }
 
 func readError(resp *http.Response) string {

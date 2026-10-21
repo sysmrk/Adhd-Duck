@@ -17,7 +17,7 @@ Port `8080`.
 Example:
 
 ```bash
-curl -s -X POST localhost:8080/webhook/preheat -H "Authorization: Bearer ${ANGRYDUCK_WEBHOOK_TOKEN}" \
+curl -s -X POST localhost:8080/webhook/preheat -H "Authorization: Bearer ${ADHDDUCK_WEBHOOK_TOKEN}" \
   -H 'Content-Type: application/json' \
   -d '{"image": "registry.example.com/app:1.2.3"}'
 ```

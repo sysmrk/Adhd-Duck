@@ -12,12 +12,12 @@ import (
 	"sync"
 	"time"
 
-	"angryduck/internal/imageref"
-	"angryduck/internal/kube"
-	"angryduck/internal/logging"
-	"angryduck/internal/metrics"
-	"angryduck/internal/model"
-	"angryduck/internal/sharedtoken"
+	"adhdduck/internal/imageref"
+	"adhdduck/internal/kube"
+	"adhdduck/internal/logging"
+	"adhdduck/internal/metrics"
+	"adhdduck/internal/model"
+	"adhdduck/internal/sharedtoken"
 )
 
 // rescuesTotal counts rescue decisions per target node. result is one of:
@@ -26,31 +26,31 @@ import (
 // (kubelet would ignore a local copy anyway).
 var (
 	rescuesTotal = metrics.NewCounterVec(
-		"angryduck_controller_rescues_total",
+		"adhdduck_controller_rescues_total",
 		"ImagePullBackOff rescues decided by the controller, by target node and result.",
 		"node", "result",
 	)
 	rescueStuckImages = metrics.NewGaugeVec(
-		"angryduck_controller_rescue_stuck_images",
+		"adhdduck_controller_rescue_stuck_images",
 		"Images each node currently can't pull (pods in ImagePullBackOff/ErrImagePull), as of the last rescuer tick.",
 		"node",
 	)
 	rescueConsecutiveFailures = metrics.NewGaugeVec(
-		"angryduck_controller_rescue_consecutive_failures",
+		"adhdduck_controller_rescue_consecutive_failures",
 		"Failed rescue attempts in a row for one node and image. Only stuck pairs with at least one failure are listed.",
 		"node", "image",
 	)
 	rescueStuckPods = metrics.NewGaugeVec(
-		"angryduck_controller_rescue_stuck_pods",
+		"adhdduck_controller_rescue_stuck_pods",
 		"Pods stuck pulling an image on a node, per node and image, and whether a rescue is running for it (in_flight 1 or 0). Only pairs stuck as of the last rescuer tick.",
 		"node", "image", "in_flight",
 	)
 	rescuesInFlight = metrics.NewGaugeVec(
-		"angryduck_controller_rescues_in_flight",
+		"adhdduck_controller_rescues_in_flight",
 		"Rescues currently running.",
 	)
 	repairOrdersTotal = metrics.NewCounterVec(
-		"angryduck_controller_repair_orders_total",
+		"adhdduck_controller_repair_orders_total",
 		"Repair orders sent to a node's worker because a container failed to start there on an image that is registered but can't be unpacked (CreateContainerError), by result: sent, failed (the worker didn't take it), no_worker (no fresh worker on that node).",
 		"node", "result",
 	)
@@ -191,7 +191,7 @@ func NewRescuer(registry *Registry, pods PodLister, token string, cfg RescuerCon
 func (rs *Rescuer) Run(ctx context.Context) {
 	ticker := time.NewTicker(rs.cfg.Interval)
 	defer ticker.Stop()
-	logging.Infof("angryduck-controller: rescuer started: interval=%s retry_after=%s backoff_max=%s timeout=%s max_concurrent=%d max_sources=%d",
+	logging.Infof("adhdduck-controller: rescuer started: interval=%s retry_after=%s backoff_max=%s timeout=%s max_concurrent=%d max_sources=%d",
 		rs.cfg.Interval, rs.cfg.RetryAfter, rs.cfg.BackoffMax, rs.cfg.Timeout, rs.cfg.MaxConcurrent, rs.cfg.MaxSources)
 	for {
 		select {
@@ -318,11 +318,11 @@ func (rs *Rescuer) orderRepairs(ctx context.Context, broken []brokenImage, byNod
 			repairOrdersTotal.Inc(b.Node, "no_worker")
 			continue
 		}
-		logging.Infof("angryduck-controller: rescuer: containers of %s can't start on image=%s on node=%s (%s); ordering the node to repair it",
+		logging.Infof("adhdduck-controller: rescuer: containers of %s can't start on image=%s on node=%s (%s); ordering the node to repair it",
 			strings.Join(b.Pods, ","), b.Image, b.Node, b.Reason)
 		if err := sendRepairOrder(ctx, rs.client, rs.token, target.Address, model.RepairOrder{Image: b.Image, Reason: b.Reason}); err != nil {
 			repairOrdersTotal.Inc(b.Node, "failed")
-			logging.Warnf("angryduck-controller: rescuer: repair order for image=%s to node=%s failed: %v", b.Image, b.Node, err)
+			logging.Warnf("adhdduck-controller: rescuer: repair order for image=%s to node=%s failed: %v", b.Image, b.Node, err)
 			continue
 		}
 		repairOrdersTotal.Inc(b.Node, "sent")
@@ -374,7 +374,7 @@ func (rs *Rescuer) tick(ctx context.Context) {
 	pods, err := rs.pods.ListPods(listCtx, "status.phase=Pending")
 	cancel()
 	if err != nil {
-		logging.Warnf("angryduck-controller: rescuer: listing pending pods failed: %v", err)
+		logging.Warnf("adhdduck-controller: rescuer: listing pending pods failed: %v", err)
 		return
 	}
 	stuck := findStuck(pods)
@@ -396,7 +396,7 @@ func (rs *Rescuer) tick(ctx context.Context) {
 	for key, st := range rs.pairs {
 		if !current[key] && !st.inFlight {
 			if st.failures > 0 || st.lastResult != "" {
-				logging.Infof("angryduck-controller: rescuer: node=%s image=%s is no longer stuck", st.Node, st.Image)
+				logging.Infof("adhdduck-controller: rescuer: node=%s image=%s is no longer stuck", st.Node, st.Image)
 			}
 			delete(rs.pairs, key) // resolved (or the pod is gone): forget its backoff
 		}
@@ -438,7 +438,7 @@ func (rs *Rescuer) tick(ctx context.Context) {
 			continue
 		case target.HasImage(s.Image):
 			// Already rescued (or pulled); kubelet just hasn't retried yet.
-			logging.Debugf("angryduck-controller: rescuer: node=%s already has image=%s, waiting for kubelet's next retry", s.Node, s.Image)
+			logging.Debugf("adhdduck-controller: rescuer: node=%s already has image=%s, waiting for kubelet's next retry", s.Node, s.Image)
 			continue
 		}
 
@@ -488,7 +488,7 @@ func (rs *Rescuer) skip(st *pairState, result, why string) {
 	// Log on change only: an unrescuable pod would otherwise log every
 	// RetryAfter for as long as it exists.
 	if changed {
-		logging.Infof("angryduck-controller: rescuer: not rescuing image=%s on node=%s for %s: %s", st.Image, st.Node, strings.Join(st.Pods, ","), why)
+		logging.Infof("adhdduck-controller: rescuer: not rescuing image=%s on node=%s for %s: %s", st.Image, st.Node, strings.Join(st.Pods, ","), why)
 	}
 }
 
@@ -508,7 +508,7 @@ func (rs *Rescuer) send(ctx context.Context, st *pairState, s stuckImage, target
 	for i, src := range sources {
 		names[i] = src.NodeID
 	}
-	logging.Infof("angryduck-controller: rescuer: ordering node=%s to fetch image=%s from peers [%s] for %s",
+	logging.Infof("adhdduck-controller: rescuer: ordering node=%s to fetch image=%s from peers [%s] for %s",
 		s.Node, s.Image, strings.Join(names, ","), strings.Join(s.Pods, ","))
 
 	start := time.Now()
@@ -523,7 +523,7 @@ func (rs *Rescuer) send(ctx context.Context, st *pairState, s stuckImage, target
 		st.next = time.Now().Add(wait)
 		failures := st.failures
 		rs.mu.Unlock()
-		logging.Warnf("angryduck-controller: rescuer: rescue of image=%s on node=%s failed after %s (%d in a row, next try in %s): %v",
+		logging.Warnf("adhdduck-controller: rescuer: rescue of image=%s on node=%s failed after %s (%d in a row, next try in %s): %v",
 			s.Image, s.Node, time.Since(start).Round(time.Millisecond), failures, wait, err)
 		rescuesTotal.Inc(s.Node, "failure")
 		return
@@ -535,7 +535,7 @@ func (rs *Rescuer) send(ctx context.Context, st *pairState, s stuckImage, target
 	rs.mu.Unlock()
 	recordTransfer(s.Image, s.Node, "rescue", result.Bytes, time.Since(start).Seconds())
 	recordDelivery(s.Image, s.Node, "rescue", since, time.Now())
-	logging.Infof("angryduck-controller: rescuer: node=%s now has image=%s (from %s: %d blob(s), %d snapshot(s), %d bytes, %s); kubelet picks it up on its next retry",
+	logging.Infof("adhdduck-controller: rescuer: node=%s now has image=%s (from %s: %d blob(s), %d snapshot(s), %d bytes, %s); kubelet picks it up on its next retry",
 		s.Node, s.Image, orDash(result.Source), result.Blobs, result.Snapshots, result.Bytes, time.Since(start).Round(time.Millisecond))
 	rescuesTotal.Inc(s.Node, "success")
 }

@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"angryduck/internal/blobship"
-	"angryduck/internal/model"
+	"adhdduck/internal/blobship"
+	"adhdduck/internal/model"
 )
 
 // spreadImage is a two-layer single-platform image's metadata, as a
@@ -66,7 +66,7 @@ func TestSpreadPresentBlobIsHeldByTheJobLease(t *testing.T) {
 	if resp.StatusCode != http.StatusOK || !ack.Present {
 		t.Fatalf("status %d ack %+v, want present", resp.StatusCode, ack)
 	}
-	if !store.leases["angryduck-spread-s1-"+sp.epoch+"-0"][d] {
+	if !store.leases["adhdduck-spread-s1-"+sp.epoch+"-0"][d] {
 		t.Fatalf("present blob not held by the job's lease: %v", store.leases)
 	}
 	store.collect() // the other image is removed

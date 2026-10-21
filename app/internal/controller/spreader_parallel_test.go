@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"angryduck/internal/model"
+	"adhdduck/internal/model"
 )
 
 // metricValue reads one series' value from /metrics (0 when absent).
@@ -98,8 +98,8 @@ func TestSpreader_SharesFreeSourcesAcrossNodes(t *testing.T) {
 // cleanup makes room.
 func TestSpreader_CompleteWhileAFullNodeWaitsForRoom(t *testing.T) {
 	s, f, reg := spreadSetup(t, 10)
-	completeBefore := metricValue(t, `angryduck_controller_spreads_total{result="complete"}`)
-	supersededBefore := metricValue(t, `angryduck_controller_spreads_total{result="superseded"}`)
+	completeBefore := metricValue(t, `adhdduck_controller_spreads_total{result="complete"}`)
+	supersededBefore := metricValue(t, `adhdduck_controller_spreads_total{result="superseded"}`)
 	if _, err := s.Start(context.Background(), img); err != nil {
 		t.Fatal(err)
 	}
@@ -119,10 +119,10 @@ func TestSpreader_CompleteWhileAFullNodeWaitsForRoom(t *testing.T) {
 	s.tick(context.Background())
 	s.wg.Wait()
 
-	if got := metricValue(t, `angryduck_controller_spreads_total{result="complete"}`) - completeBefore; got != 1 {
+	if got := metricValue(t, `adhdduck_controller_spreads_total{result="complete"}`) - completeBefore; got != 1 {
 		t.Fatalf("complete counted %v times, want once every node with room has it", got)
 	}
-	if !strings.Contains(scrape(t), `angryduck_controller_image_spread_seconds{image="`+img+`",result="complete"}`) {
+	if !strings.Contains(scrape(t), `adhdduck_controller_image_spread_seconds{image="`+img+`",result="complete"}`) {
 		t.Fatal("completion not in the image history")
 	}
 	if s.jobFor(img) == nil {
@@ -139,9 +139,9 @@ func TestSpreader_CompleteWhileAFullNodeWaitsForRoom(t *testing.T) {
 	}
 	out := scrape(t)
 	for _, gone := range []string{
-		`angryduck_controller_spread_nodes{image="` + img + `"`,
-		`angryduck_controller_spread_node_missing_bytes{image="` + img + `",node="full"}`,
-		`angryduck_controller_image_spread_seconds{image="` + img + `",result="running"}`,
+		`adhdduck_controller_spread_nodes{image="` + img + `"`,
+		`adhdduck_controller_spread_node_missing_bytes{image="` + img + `",node="full"}`,
+		`adhdduck_controller_image_spread_seconds{image="` + img + `",result="running"}`,
 	} {
 		if strings.Contains(out, gone) {
 			t.Fatalf("complete spread waiting only on a full node still shows %s", gone)
@@ -151,7 +151,7 @@ func TestSpreader_CompleteWhileAFullNodeWaitsForRoom(t *testing.T) {
 	// Ticks while it waits count nothing again.
 	s.tick(context.Background())
 	s.wg.Wait()
-	if got := metricValue(t, `angryduck_controller_spreads_total{result="complete"}`) - completeBefore; got != 1 {
+	if got := metricValue(t, `adhdduck_controller_spreads_total{result="complete"}`) - completeBefore; got != 1 {
 		t.Fatalf("complete counted %v times after another tick", got)
 	}
 
@@ -168,7 +168,7 @@ func TestSpreader_CompleteWhileAFullNodeWaitsForRoom(t *testing.T) {
 		t.Fatal(err)
 	}
 	s.wg.Wait()
-	if got := metricValue(t, `angryduck_controller_spreads_total{result="superseded"}`) - supersededBefore; got != 0 {
+	if got := metricValue(t, `adhdduck_controller_spreads_total{result="superseded"}`) - supersededBefore; got != 0 {
 		t.Fatalf("a spread already complete counted superseded (%v)", got)
 	}
 }

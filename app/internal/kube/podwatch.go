@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"angryduck/internal/logging"
+	"adhdduck/internal/logging"
 )
 
 // watchTimeout is how long one watch request may run; the API server ends
@@ -74,7 +74,7 @@ func (w *PodWatch) Run(ctx context.Context) {
 	for ctx.Err() == nil {
 		rv, err := w.list(ctx)
 		if err != nil {
-			logging.Warnf("angryduck-controller: listing pods (%s) failed, retrying in %s: %v", w.selector, backoff, err)
+			logging.Warnf("adhdduck-controller: listing pods (%s) failed, retrying in %s: %v", w.selector, backoff, err)
 			if !sleep(ctx, backoff) {
 				return
 			}
@@ -91,12 +91,12 @@ func (w *PodWatch) Run(ctx context.Context) {
 			}
 			var se *StatusError
 			if errors.As(err, &se) && se.Code == http.StatusForbidden {
-				logging.Warnf("angryduck-controller: not allowed to watch pods, listing them every %s instead (add \"watch\" to the controller's ClusterRole for pods): %v", w.fallback, err)
+				logging.Warnf("adhdduck-controller: not allowed to watch pods, listing them every %s instead (add \"watch\" to the controller's ClusterRole for pods): %v", w.fallback, err)
 				w.poll(ctx)
 				return
 			}
 			if !errors.Is(err, errGone) {
-				logging.Warnf("angryduck-controller: pod watch (%s) broke, listing again: %v", w.selector, err)
+				logging.Warnf("adhdduck-controller: pod watch (%s) broke, listing again: %v", w.selector, err)
 				if !sleep(ctx, time.Second) {
 					return
 				}
@@ -129,7 +129,7 @@ func (w *PodWatch) list(ctx context.Context) (string, error) {
 func (w *PodWatch) poll(ctx context.Context) {
 	for sleep(ctx, w.fallback) {
 		if _, err := w.list(ctx); err != nil {
-			logging.Warnf("angryduck-controller: listing pods (%s) failed: %v", w.selector, err)
+			logging.Warnf("adhdduck-controller: listing pods (%s) failed: %v", w.selector, err)
 		}
 	}
 }

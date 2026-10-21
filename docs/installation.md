@@ -17,11 +17,11 @@
 
 Check the containerd and kubelet settings in
 [Node settings and limits](node-settings.md) first: `discard_unpacked_layers`
-and `serializeImagePulls` in particular decide how much Angry Duck can do.
+and `serializeImagePulls` in particular decide how much ADHD Duck can do.
 
 ## Deploy with Helm
 
-The chart in `helm/angryduck` renders the same objects as `k8s/`, with the
+The chart in `helm/adhdduck` renders the same objects as `k8s/`, with the
 parts that differ between clusters as values. Create the Secrets from step 2
 below first. See [Helm](helm.md).
 
@@ -36,8 +36,8 @@ Every release publishes both images to GitHub Container Registry, tagged with
 the version (`1.8.15`) and `latest`:
 
 ```text
-ghcr.io/hatam-abolghasemi/angry-duck-controller:1.8.15
-ghcr.io/hatam-abolghasemi/angry-duck-worker:1.8.15
+ghcr.io/sysmrk/adhd-duck-controller:1.8.15
+ghcr.io/sysmrk/adhd-duck-worker:1.8.15
 ```
 
 They are public, so kubelet needs no `imagePullSecrets` for them. If you
@@ -48,11 +48,11 @@ To build and push your own instead:
 
 ```bash
 cd app
-REGISTRY=registry.example.com/angryduck
-docker build -t $REGISTRY/angry-duck-controller:1.8.15 -f Dockerfile.controller .
-docker build -t $REGISTRY/angry-duck-worker:1.8.15 -f Dockerfile.worker .
-docker push $REGISTRY/angry-duck-controller:1.8.15
-docker push $REGISTRY/angry-duck-worker:1.8.15
+REGISTRY=registry.example.com/adhdduck
+docker build -t $REGISTRY/adhd-duck-controller:1.8.15 -f Dockerfile.controller .
+docker build -t $REGISTRY/adhd-duck-worker:1.8.15 -f Dockerfile.worker .
+docker push $REGISTRY/adhd-duck-controller:1.8.15
+docker push $REGISTRY/adhd-duck-worker:1.8.15
 ```
 
 Set the `image:` fields in `deployment-controller.yaml` and
@@ -63,19 +63,19 @@ Set the `image:` fields in `deployment-controller.yaml` and
 | Secret | Used by | Holds |
 |---|---|---|
 | `registry-pull` | both, mounted as a file | Credentials for seed pulls and manifest reads (`REGISTRY_CREDENTIALS_PATH`). Optional if every image you push is public. |
-| `angryduck-rescue-token` | both, mounted as a file | The shared token. Without it, rescue, propagation and the mirror stay off. |
-| `angryduck-webhook-token` | controller, mounted as a file | CI's token for the webhook. Without it, the webhook is unauthenticated. |
+| `adhdduck-rescue-token` | both, mounted as a file | The shared token. Without it, rescue, propagation and the mirror stay off. |
+| `adhdduck-webhook-token` | controller, mounted as a file | CI's token for the webhook. Without it, the webhook is unauthenticated. |
 
 ```bash
 kubectl apply -f k8s/namespace.yaml
 
-kubectl -n angryduck create secret docker-registry registry-pull \
+kubectl -n adhdduck create secret docker-registry registry-pull \
   --docker-server=registry.example.com --docker-username=<user> --docker-password=<password>
 
-kubectl -n angryduck create secret generic angryduck-rescue-token \
+kubectl -n adhdduck create secret generic adhdduck-rescue-token \
   --from-literal=token=$(openssl rand -hex 32)
 
-kubectl -n angryduck create secret generic angryduck-webhook-token \
+kubectl -n adhdduck create secret generic adhdduck-webhook-token \
   --from-literal=token=$(openssl rand -hex 32)
 ```
 
@@ -109,9 +109,9 @@ kubectl apply -f k8s/
 ### 5. Verify
 
 ```bash
-kubectl -n angryduck get pods -o wide
-kubectl -n angryduck logs deploy/angryduck-controller | grep -E 'rescuer started|propagator started|WARNING'
-kubectl -n angryduck port-forward svc/angryduck-controller 8080:8080 &
+kubectl -n adhdduck get pods -o wide
+kubectl -n adhdduck logs deploy/adhdduck-controller | grep -E 'rescuer started|propagator started|WARNING'
+kubectl -n adhdduck port-forward svc/adhdduck-controller 8080:8080 &
 curl -s localhost:8080/status | jq '{fresh_count, workers: [.workers[] | {node_id, fresh}]}'
 ```
 
@@ -121,8 +121,8 @@ rescuer and propagator starting without warnings.
 ### 6. Expose the webhook
 
 Set the host and ingress class in `ingress-controller-webhook.yaml`. The
-ingress exposes only `/webhook/preheat`. Store the `angryduck-webhook-token` value as a
-masked CI variable, `ANGRYDUCK_WEBHOOK_TOKEN`, and send it as a bearer token.
+ingress exposes only `/webhook/preheat`. Store the `adhdduck-webhook-token` value as a
+masked CI variable, `ADHDDUCK_WEBHOOK_TOKEN`, and send it as a bearer token.
 Restricting the ingress to your CI runners as well is a good idea; see
 [Security](security.md).
 
@@ -133,8 +133,8 @@ the manifests, and never let it fail the pipeline. The call returns within
 seconds, and distribution continues while the rest of the pipeline runs.
 
 ```bash
-curl -fsS -m 10 -X POST https://angryduck.example.com/webhook/preheat \
-  -H "Authorization: Bearer ${ANGRYDUCK_WEBHOOK_TOKEN}" \
+curl -fsS -m 10 -X POST https://adhdduck.example.com/webhook/preheat \
+  -H "Authorization: Bearer ${ADHDDUCK_WEBHOOK_TOKEN}" \
   -H 'Content-Type: application/json' -d "{\"image\":\"${IMAGE}\"}" || true
 ```
 
@@ -146,8 +146,8 @@ build:
     - docker build -t "$IMAGE" .
     - docker push "$IMAGE"
     - >
-      curl -fsS -m 10 -X POST "$ANGRYDUCK_WEBHOOK"
-      -H "Authorization: Bearer $ANGRYDUCK_WEBHOOK_TOKEN"
+      curl -fsS -m 10 -X POST "$ADHDDUCK_WEBHOOK"
+      -H "Authorization: Bearer $ADHDDUCK_WEBHOOK_TOKEN"
       -H 'Content-Type: application/json' -d "{\"image\":\"$IMAGE\"}" || true
 ```
 

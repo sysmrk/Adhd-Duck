@@ -6,7 +6,7 @@ import (
 	"runtime/metrics"
 	"time"
 
-	"angryduck/internal/logging"
+	"adhdduck/internal/logging"
 )
 
 // ReleaseWhenIdle hands freed heap memory back to the OS. Go keeps heap it
@@ -15,7 +15,7 @@ import (
 // burst. Every interval, if more than minRetained bytes of freed heap are
 // held, it runs a collection and returns them. The check itself reads two
 // counters; the collection costs well under a millisecond at this heap
-// size. angryduck_process_memory_bytes shows the effect.
+// size. adhdduck_process_memory_bytes shows the effect.
 func ReleaseWhenIdle(ctx context.Context, interval time.Duration, minRetained uint64) {
 	s := []metrics.Sample{{Name: "/memory/classes/heap/free:bytes"}, {Name: "/memory/classes/heap/unused:bytes"}}
 	t := time.NewTicker(interval)

@@ -1,7 +1,7 @@
-// Package kube is the smallest Kubernetes API client Angry Duck needs:
+// Package kube is the smallest Kubernetes API client ADHD Duck needs:
 // the controller lists and watches pods with a field selector, and a worker checks on
 // shutdown whether its DaemonSet is being deleted. It is written
-// against net/http directly to keep Angry Duck free of client-go.
+// against net/http directly to keep ADHD Duck free of client-go.
 package kube
 
 import (

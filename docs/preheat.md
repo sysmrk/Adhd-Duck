@@ -9,8 +9,8 @@ image; [propagation](propagation.md) takes it from there.
 CI calls the controller's webhook right after `docker push`:
 
 ```bash
-curl -fsS -X POST https://angryduck.example.com/webhook/preheat \
-  -H "Authorization: Bearer ${ANGRYDUCK_WEBHOOK_TOKEN}" \
+curl -fsS -X POST https://adhdduck.example.com/webhook/preheat \
+  -H "Authorization: Bearer ${ADHDDUCK_WEBHOOK_TOKEN}" \
   -H 'Content-Type: application/json' -d "{\"image\":\"${IMAGE}\"}" || true
 ```
 
@@ -60,11 +60,11 @@ kubelet's `imagePullSecrets` don't apply. They use the same credentials file.
 
 | Metric | What to look for |
 |---|---|
-| `angryduck_controller_pull_orders_total` | Orders by node and result. |
-| `angryduck_controller_seed_rankings_total` | `basis="layers"` should dominate; fallbacks mean manifests couldn't be read. |
-| `angryduck_controller_seed_missing_bytes` | What each seed had to download for the latest image. |
-| `angryduck_worker_pulls_total`, `angryduck_worker_pull_seconds_total` | Seed pull outcomes and time spent. |
-| `angryduck_worker_preheated_containers_running` | Whether preheated repos actually run on the seeds. |
+| `adhdduck_controller_pull_orders_total` | Orders by node and result. |
+| `adhdduck_controller_seed_rankings_total` | `basis="layers"` should dominate; fallbacks mean manifests couldn't be read. |
+| `adhdduck_controller_seed_missing_bytes` | What each seed had to download for the latest image. |
+| `adhdduck_worker_pulls_total`, `adhdduck_worker_pull_seconds_total` | Seed pull outcomes and time spent. |
+| `adhdduck_worker_preheated_containers_running` | Whether preheated repos actually run on the seeds. |
 
 ## Settings
 

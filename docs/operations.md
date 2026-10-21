@@ -2,11 +2,11 @@
 
 ## Status
 
-The controller's `GET /status` is the quickest view of what Angry Duck is
+The controller's `GET /status` is the quickest view of what ADHD Duck is
 doing:
 
 ```bash
-kubectl -n angryduck port-forward svc/angryduck-controller 8080:8080 &
+kubectl -n adhdduck port-forward svc/adhdduck-controller 8080:8080 &
 
 # Workers and their freshness
 curl -s localhost:8080/status | jq '{fresh_count, workers: [.workers[] | {node_id, fresh}]}'
@@ -44,7 +44,7 @@ utilization math.
 | Symptom | Likely cause |
 |---|---|
 | Webhook returns `503` | No fresh workers. Check worker logs, `SELF_ADDRESS`, `NODE_EXPORTER_URL` and that the controller can reach port `18081`. |
-| `angryduck_controller_seed_rankings_total` shows `repo` or `utilization` | The controller can't read the manifest. Add the registry to the `REGISTRY_CREDENTIALS_PATH` file. |
+| `adhdduck_controller_seed_rankings_total` shows `repo` or `utilization` | The controller can't read the manifest. Add the registry to the `REGISTRY_CREDENTIALS_PATH` file. |
 | Rescue or propagation never starts | The shared token is missing or shorter than 32 characters, or the controller can't list pods. The controller logs a warning at startup. |
 | Workers report no disk usage | node-exporter isn't reachable at the node IP from pods. Check `NODE_EXPORTER_URL` in the DaemonSet. |
 | Mirror never used, containerd logs `401` | A stale `hosts.toml` from a worker that died without SIGTERM; the next worker rewrites it within seconds. |
@@ -77,9 +77,9 @@ pieces are fetched, from peers first, then the registry, and the image keeps
 its name. The worker logs `image repair: image=... can't start containers
 (...): repairing it in place`, then `repaired in ...: N metadata blob(s) and M
 layer blob(s) fetched, X bytes from peers, Y from the registry`, and
-`angryduck_worker_image_repairs_total{result="repaired"}` goes up. The
+`adhdduck_worker_image_repairs_total{result="repaired"}` goes up. The
 controller sends a repair order as soon as a pod's container fails to start
-on it (`angryduck_controller_repair_orders_total`), and the periodic check
+on it (`adhdduck_controller_repair_orders_total`), and the periodic check
 catches the rest within `IMAGE_REPAIR_INTERVAL_S`. While the image is broken,
 the node leaves it out of its reports, so the controller neither counts the
 node as having it nor offers it as a source.
@@ -122,7 +122,7 @@ On a node holding 304 images, 614 snapshots and 918 blobs, with containerd 2.2:
 
 - The worker's container memory (`kubectl top`) is about 15 MiB higher than
   `rss_anon`: that is its own code, mapped from the binary, which the kernel
-  can drop and reload. Size against `angryduck_process_memory_bytes{kind="rss_anon"}`.
+  can drop and reload. Size against `adhdduck_process_memory_bytes{kind="rss_anon"}`.
 - Once a minute, worker and controller hand freed heap back to the OS when
   more than 1 MiB is retained, so after a burst memory returns to near its
   idle level.
@@ -152,9 +152,9 @@ The token is read once at startup. Update the Secret, then restart the
 controller and every worker:
 
 ```bash
-kubectl -n angryduck create secret generic angryduck-rescue-token \
+kubectl -n adhdduck create secret generic adhdduck-rescue-token \
   --from-literal=token=$(openssl rand -hex 32) --dry-run=client -o yaml | kubectl apply -f -
-kubectl -n angryduck rollout restart deploy/angryduck-controller ds/angryduck-worker
+kubectl -n adhdduck rollout restart deploy/adhdduck-controller ds/adhdduck-worker
 ```
 
 Transfers fail while old and new pods disagree on the token, and resume once
@@ -163,18 +163,18 @@ the rollout completes.
 ## Bootstrapping a node by hand
 
 A worker can't receive its own image. If a node can't reach the registry, a
-new Angry Duck version gets stuck there and the DaemonSet rollout stops at
+new ADHD Duck version gets stuck there and the DaemonSet rollout stops at
 that node. Copy the worker image from a healthy worker that holds its blobs,
 then delete the stuck pod so the DaemonSet recreates it with the image already
 local. Workers listen on their pod IPs; find a healthy one with
-`kubectl -n angryduck get pods -o wide`.
+`kubectl -n adhdduck get pods -o wide`.
 
 Run this on the stuck node:
 
 ```bash
-IMG=ghcr.io/hatam-abolghasemi/angry-duck-worker:1.8.15
+IMG=ghcr.io/sysmrk/adhd-duck-worker:1.8.15
 SRC=<healthy-worker-pod-ip>:18081
-TOKEN=<token from the angryduck-rescue-token secret>
+TOKEN=<token from the adhdduck-rescue-token secret>
 
 # What the image consists of, and what this node already has
 curl -sSf -H "Authorization: Bearer $TOKEN" \
@@ -198,7 +198,7 @@ directory), is enough.
 Each worker, on SIGTERM, sees its DaemonSet gone and removes its
 `hosts.toml` files, releases rescue pins, removes temporary snapshots and
 base images, and deletes its state files. Images rescued or preheated onto
-nodes stay: kubelet uses them. The empty `/var/lib/angryduck` directory
+nodes stay: kubelet uses them. The empty `/var/lib/adhdduck` directory
 stays on each node.
 
 If the worker can't reach the API server on shutdown, it keeps the state

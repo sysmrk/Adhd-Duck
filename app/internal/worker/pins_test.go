@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"angryduck/internal/blobship"
-	"angryduck/internal/model"
+	"adhdduck/internal/blobship"
+	"adhdduck/internal/model"
 )
 
 func TestRescue_RetryAfterFailedImportDoesNotReshipSnapshots(t *testing.T) {
@@ -81,14 +81,14 @@ func TestPins_ExpireAndSurviveRestart(t *testing.T) {
 
 func TestCleanupLeftovers_RemovesOnlyOurTempSnapshots(t *testing.T) {
 	store := blobship.NewMemStore()
-	store.AddRawSnapshot("angryduck-rescue-abc123")
-	store.AddRawSnapshot("angryduck-view-def456")
+	store.AddRawSnapshot("adhdduck-rescue-abc123")
+	store.AddRawSnapshot("adhdduck-view-def456")
 	store.AddRawSnapshot("sha256:real-layer")
 	store.AddRawSnapshot("k8s-container-id")
 
 	CleanupLeftovers(context.Background(), store, NewPins(store, "n", time.Hour, ""), "n")
 	snaps, _ := store.Snapshots(context.Background())
-	if snaps["angryduck-rescue-abc123"] || snaps["angryduck-view-def456"] {
+	if snaps["adhdduck-rescue-abc123"] || snaps["adhdduck-view-def456"] {
 		t.Fatalf("leftovers not removed: %v", snaps)
 	}
 	if !snaps["sha256:real-layer"] || !snaps["k8s-container-id"] {

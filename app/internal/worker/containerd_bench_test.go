@@ -18,14 +18,14 @@ import (
 
 	"github.com/containerd/containerd/namespaces"
 
-	"angryduck/internal/model"
+	"adhdduck/internal/model"
 )
 
 // Timing runs for snapshot shipping, against a real containerd. Sizes come
 // from the environment so a run fits the machine:
 //
-//	ANGRYDUCK_CONTAINERD=/run/containerd/containerd.sock \
-//	ANGRYDUCK_BENCH_BASE_MB=300 ANGRYDUCK_BENCH_APP_MB=150 \
+//	ADHDDUCK_CONTAINERD=/run/containerd/containerd.sock \
+//	ADHDDUCK_BENCH_BASE_MB=300 ADHDDUCK_BENCH_APP_MB=150 \
 //	go test -tags integration -run TestBench -v ./internal/worker/
 //
 // The base layer travels as a blob; the app layer only as a snapshot, as on
@@ -65,7 +65,7 @@ func benchSetup(t *testing.T, baseMB, appMB int) (src, dst *ContainerdStore, app
 	src = NewContainerdStore(c, testNS(t, "bsrc"), "overlayfs")
 	dst = NewContainerdStore(c, testNS(t, "bdst"), "overlayfs")
 	for _, s := range []*ContainerdStore{src, dst} {
-		s.UseBlobDir(os.Getenv("ANGRYDUCK_CONTAINERD_ROOT"), "/etc/containerd/config.toml")
+		s.UseBlobDir(os.Getenv("ADHDDUCK_CONTAINERD_ROOT"), "/etc/containerd/config.toml")
 	}
 	base := bulkLayer("base", baseMB, 1)
 	app = buildImage(t, "registry.example.com/team/bench:1", base, bulkLayer("app", appMB, 2))
@@ -89,7 +89,7 @@ func benchSetup(t *testing.T, baseMB, appMB int) (src, dst *ContainerdStore, app
 }
 
 func TestBench_SnapshotExport(t *testing.T) {
-	baseMB, appMB := benchMB(t, "ANGRYDUCK_BENCH_BASE_MB", 300), benchMB(t, "ANGRYDUCK_BENCH_APP_MB", 150)
+	baseMB, appMB := benchMB(t, "ADHDDUCK_BENCH_BASE_MB", 300), benchMB(t, "ADHDDUCK_BENCH_APP_MB", 150)
 	src, _, app := benchSetup(t, baseMB, appMB)
 	ctx := context.Background()
 	for i := 0; i < 3; i++ {
@@ -103,7 +103,7 @@ func TestBench_SnapshotExport(t *testing.T) {
 }
 
 func TestBench_SnapshotRescue(t *testing.T) {
-	baseMB, appMB := benchMB(t, "ANGRYDUCK_BENCH_BASE_MB", 300), benchMB(t, "ANGRYDUCK_BENCH_APP_MB", 150)
+	baseMB, appMB := benchMB(t, "ADHDDUCK_BENCH_BASE_MB", 300), benchMB(t, "ADHDDUCK_BENCH_APP_MB", 150)
 	src, dst, app := benchSetup(t, baseMB, appMB)
 	_, srcSrv := realPeer(t, "worker14", src, nil)
 	_, dstSrv := realPeer(t, "master1", dst, nil)

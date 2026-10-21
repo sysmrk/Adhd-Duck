@@ -5,13 +5,13 @@ import (
 	"sync"
 	"time"
 
-	"angryduck/internal/layerindex"
-	"angryduck/internal/metrics"
-	"angryduck/internal/model"
+	"adhdduck/internal/layerindex"
+	"adhdduck/internal/metrics"
+	"adhdduck/internal/model"
 )
 
 var layerIndexDigests = metrics.NewGaugeVec(
-	"angryduck_controller_layer_index_digests",
+	"adhdduck_controller_layer_index_digests",
 	"Distinct blob digests and snapshot chainIDs held in the controller's layer index, across all nodes.",
 )
 

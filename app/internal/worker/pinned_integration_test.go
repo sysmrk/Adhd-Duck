@@ -3,8 +3,8 @@
 package worker
 
 import (
-	"angryduck/internal/blobship"
-	"angryduck/internal/model"
+	"adhdduck/internal/blobship"
+	"adhdduck/internal/model"
 	"bytes"
 	"context"
 	"net/http"

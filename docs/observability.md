@@ -5,20 +5,20 @@ ServiceMonitors for the Prometheus Operator that scrape every 15 seconds.
 
 ## Grafana dashboard
 
-[`grafana/angryduck-dashboard.json`](../grafana/angryduck-dashboard.json) has
+[`grafana/adhdduck-dashboard.json`](../grafana/adhdduck-dashboard.json) has
 one tab per concern. Each opens with a summary row: six numbers, then a status
 table with one row per node, image, registry or process, then charts in pairs.
 Detail rows follow, the rarely needed ones collapsed.
 
 | Tab | Answers |
 |---|---|
-| **Overview** | Is Angry Duck healthy, and is it saving anything? Workers up, images stuck and broken, spreads running, mirror hit ratio, registry traffic avoided; a node table (version, uptime, containerd event watch, stuck, broken, cleanup, mirror hits, bytes from and to peers, memory, containerd calls); peer versus registry traffic; which nodes follow containerd's events. |
+| **Overview** | Is ADHD Duck healthy, and is it saving anything? Workers up, images stuck and broken, spreads running, mirror hit ratio, registry traffic avoided; a node table (version, uptime, containerd event watch, stuck, broken, cleanup, mirror hits, bytes from and to peers, memory, containerd calls); peer versus registry traffic; which nodes follow containerd's events. |
 | **Image** | Everything about one image (pick it in **Image**, or click it anywhere): the spread's progress, how long it took and how it ended; per node, how it got the image (peer, registry, seed, rescue, ...), how long after the preheat, bytes and time per side; the components and pods using it, on which nodes and in which state; seed pulls, repairs, which nodes removed it and when the next ones will. On *All*, the same tables list every recent image. |
 | **Delivery** | How images reach nodes: every running spread with nodes and layers per state, what each node still lacks, the transfers running, throughput per path, seed pulls; preheat and propagation in collapsed rows. |
 | **Rescue & Repair** | What is stuck or broken, and who it hits: stuck pulls per node and image with rescue state and failures in a row, broken images, the pods waiting on them and kubelet's reason, rescues, layers by delivery method, repairs and their downloads. |
 | **Mirror & Registry** | The mirror's hit ratio, requests and bytes; what each registry answered at the last origin check; images their registry no longer serves, the copies left and the containers using them. |
 | **Disk Cleanup** | Cleanup state per node over time, images removable per tier, images removed, failed removals, images coming back after removal; image by image, what was removed from which node and what comes up next, and when. |
-| **Runtime** | Angry Duck's own cost: processes, versions, restarts, memory really held (`rss_anon`), CPU, containerd calls per node and method, inventory events, the controller's layer index and work in flight. |
+| **Runtime** | ADHD Duck's own cost: processes, versions, restarts, memory really held (`rss_anon`), CPU, containerd calls per node and method, inventory events, the controller's layer index and work in flight. |
 
 Every panel has a one-line description (hover its title). Click a node or an
 image anywhere, in a table or a chart, to focus the whole dashboard on it.
@@ -35,7 +35,7 @@ Variables:
   aggregate several clusters. Without that label, leave it on *All*. If your
   cluster label has another name, replace `k8s_source_cluster` in the JSON.
 - **Node**: applies to every per-node metric.
-- **Image**: the images Angry Duck is busy with, or has [history](#image-history)
+- **Image**: the images ADHD Duck is busy with, or has [history](#image-history)
   for in the time range: spreading, delivered, stuck, broken, repaired, pulled, removed or coming
   up for removal, gone from their registry. Counters over time carry no image
   label, by design, to keep the number of series bounded.
@@ -46,13 +46,13 @@ The pod and component views use kube-state-metrics in the same data source
 `kube_pod_container_status_*` series). A pod is tied to its component through
 its owner: a Deployment through its ReplicaSet, a CronJob through its Job.
 Images are matched on the image as written in the pod spec
-(`image_spec`). That equals Angry Duck's `image` label for references with a
+(`image_spec`). That equals ADHD Duck's `image` label for references with a
 registry host and a tag (`registry.example.com/team/app:v1`); Docker Hub short
 names (`nginx`) don't match. CPU comes from cAdvisor
 (`container_cpu_usage_seconds_total`, containers `worker` and `controller`).
 Without them, those panels stay empty and everything else works.
 
-Annotations, toggled from the dashboard controls: Angry Duck versions rolling
+Annotations, toggled from the dashboard controls: ADHD Duck versions rolling
 out, process restarts, rescue failures, repair failures, disk cleanup stalling
 and a registry becoming unreachable (all on), and spreads starting (off: with
 hundreds of spreads a day they would cover every chart). The **Reset filters**
@@ -69,23 +69,23 @@ the first event too.
 
 | Metric | Type | Labels | Meaning |
 |---|---|---|---|
-| `angryduck_controller_origin_images` | gauge | `registry`, `status` | Distinct images on fresh nodes, by registry and its answer at the last [origin check](#origin-check): `ok`, `missing`, `denied`, `unreachable`, `unchecked`. |
-| `angryduck_controller_origin_unavailable` | gauge | `image`, `status` | Images a registry didn't serve (`missing` or `denied`); the value is how many fresh nodes still hold a copy. Only such images are listed. |
-| `angryduck_controller_origin_checks_total` | counter | `status` | Origin checks sent, by answer. |
-| `angryduck_controller_pull_orders_total` | counter | `node`, `result`, `registry` | Seed pull orders sent to workers: `success` or `failure`. |
-| `angryduck_controller_seed_rankings_total` | counter | `basis` | How seeds were ranked: `layers`, or the `repo` and `utilization` fallbacks. |
-| `angryduck_controller_seed_missing_bytes` | gauge | `node` | Bytes of the latest seeded image each seed lacked, i.e. its registry download. |
-| `angryduck_controller_seed_timeouts_total` | counter | `node` | Slow seed pulls cancelled in favor of peers. |
-| `angryduck_controller_layer_index_digests` | gauge | | Distinct blob digests and snapshot chainIDs across all nodes. |
-| `angryduck_controller_propagations_total` | counter | `result` | Finished propagations: `complete`, `superseded` or `expired`. |
-| `angryduck_controller_propagation_transfers_total` | counter | `node`, `result` | Transfers ordered while spreading images. |
-| `angryduck_controller_propagation_nodes` | gauge | `image`, `state` | Nodes per image: `have`, `missing`, `in_flight`, `seeding`, `skipped`. |
-| `angryduck_controller_rescues_total` | counter | `node`, `result` | `success`, `failure`, `no_source`, `no_target`, `pull_policy_always`. |
-| `angryduck_controller_rescue_stuck_images` | gauge | `node` | Images each node can't pull right now. |
-| `angryduck_controller_rescue_consecutive_failures` | gauge | `node`, `image` | Failed attempts in a row, for pairs with at least one failure. |
-| `angryduck_controller_rescues_in_flight` | gauge | | Rescues running now. |
-| `angryduck_controller_rescue_stuck_pods` | gauge | `node`, `image`, `in_flight` | Pods stuck per node and image; `in_flight` 1 while a rescue runs for it. Only pairs stuck now. |
-| `angryduck_controller_repair_orders_total` | counter | `node`, `result` | Repair orders sent because a container failed to start on a broken image (`CreateContainerError`): `sent`, `failed`, `no_worker`. |
+| `adhdduck_controller_origin_images` | gauge | `registry`, `status` | Distinct images on fresh nodes, by registry and its answer at the last [origin check](#origin-check): `ok`, `missing`, `denied`, `unreachable`, `unchecked`. |
+| `adhdduck_controller_origin_unavailable` | gauge | `image`, `status` | Images a registry didn't serve (`missing` or `denied`); the value is how many fresh nodes still hold a copy. Only such images are listed. |
+| `adhdduck_controller_origin_checks_total` | counter | `status` | Origin checks sent, by answer. |
+| `adhdduck_controller_pull_orders_total` | counter | `node`, `result`, `registry` | Seed pull orders sent to workers: `success` or `failure`. |
+| `adhdduck_controller_seed_rankings_total` | counter | `basis` | How seeds were ranked: `layers`, or the `repo` and `utilization` fallbacks. |
+| `adhdduck_controller_seed_missing_bytes` | gauge | `node` | Bytes of the latest seeded image each seed lacked, i.e. its registry download. |
+| `adhdduck_controller_seed_timeouts_total` | counter | `node` | Slow seed pulls cancelled in favor of peers. |
+| `adhdduck_controller_layer_index_digests` | gauge | | Distinct blob digests and snapshot chainIDs across all nodes. |
+| `adhdduck_controller_propagations_total` | counter | `result` | Finished propagations: `complete`, `superseded` or `expired`. |
+| `adhdduck_controller_propagation_transfers_total` | counter | `node`, `result` | Transfers ordered while spreading images. |
+| `adhdduck_controller_propagation_nodes` | gauge | `image`, `state` | Nodes per image: `have`, `missing`, `in_flight`, `seeding`, `skipped`. |
+| `adhdduck_controller_rescues_total` | counter | `node`, `result` | `success`, `failure`, `no_source`, `no_target`, `pull_policy_always`. |
+| `adhdduck_controller_rescue_stuck_images` | gauge | `node` | Images each node can't pull right now. |
+| `adhdduck_controller_rescue_consecutive_failures` | gauge | `node`, `image` | Failed attempts in a row, for pairs with at least one failure. |
+| `adhdduck_controller_rescues_in_flight` | gauge | | Rescues running now. |
+| `adhdduck_controller_rescue_stuck_pods` | gauge | `node`, `image`, `in_flight` | Pods stuck per node and image; `in_flight` 1 while a rescue runs for it. Only pairs stuck now. |
+| `adhdduck_controller_repair_orders_total` | counter | `node`, `result` | Repair orders sent because a container failed to start on a broken image (`CreateContainerError`): `sent`, `failed`, `no_worker`. |
 
 <a id="spread"></a>Spread. Series labeled `image` or `node` exist only while
 that image is being spread and drop when it ends, so their number follows
@@ -93,52 +93,52 @@ what is moving, not history:
 
 | Metric | Type | Labels | Meaning |
 |---|---|---|---|
-| `angryduck_controller_spread_nodes` | gauge | `image`, `state` | Nodes per image: `done`, `finalizing`, `transferring`, `waiting`, `skipped`. A complete spread still open only for full nodes publishes nothing until one of them starts receiving. |
-| `angryduck_controller_spread_layers` | gauge | `image`, `state` | Layers per image: `held` (peers can fetch it), `pulling` (only coming from the registry now), `missing`. |
-| `angryduck_controller_spread_node_missing_layers` | gauge | `image`, `node` | Layers each node still lacks. Nodes not done and not too full only. |
-| `angryduck_controller_spread_node_missing_bytes` | gauge | `image`, `node` | Bytes each node still lacks. Nodes not done and not too full only. |
-| `angryduck_controller_spread_transfer_bytes` | gauge | `image`, `node`, `path`, `source`, `blob` | One series per transfer running now, its blob's size. At most two per node. |
-| `angryduck_controller_spread_transfers_total` | counter | `path`, `result` | Transfers ended: `ok`, `failed`, `cancelled` (lost a race), `present`, `rejected`. |
-| `angryduck_controller_spread_bytes_total` | counter | `path` | Bytes received for spreads. `path="registry"` is everything the registry served for them. |
-| `angryduck_controller_spread_finalizes_total` | counter | `result` | Nodes registering a spread image. |
-| `angryduck_controller_spreads_total` | counter | `result` | Spreads ended: `complete`, `superseded`, `expired`. |
-| `angryduck_controller_spread_last_duration_seconds` | gauge | | Preheat to last node registered, for the last complete spread. |
+| `adhdduck_controller_spread_nodes` | gauge | `image`, `state` | Nodes per image: `done`, `finalizing`, `transferring`, `waiting`, `skipped`. A complete spread still open only for full nodes publishes nothing until one of them starts receiving. |
+| `adhdduck_controller_spread_layers` | gauge | `image`, `state` | Layers per image: `held` (peers can fetch it), `pulling` (only coming from the registry now), `missing`. |
+| `adhdduck_controller_spread_node_missing_layers` | gauge | `image`, `node` | Layers each node still lacks. Nodes not done and not too full only. |
+| `adhdduck_controller_spread_node_missing_bytes` | gauge | `image`, `node` | Bytes each node still lacks. Nodes not done and not too full only. |
+| `adhdduck_controller_spread_transfer_bytes` | gauge | `image`, `node`, `path`, `source`, `blob` | One series per transfer running now, its blob's size. At most two per node. |
+| `adhdduck_controller_spread_transfers_total` | counter | `path`, `result` | Transfers ended: `ok`, `failed`, `cancelled` (lost a race), `present`, `rejected`. |
+| `adhdduck_controller_spread_bytes_total` | counter | `path` | Bytes received for spreads. `path="registry"` is everything the registry served for them. |
+| `adhdduck_controller_spread_finalizes_total` | counter | `result` | Nodes registering a spread image. |
+| `adhdduck_controller_spreads_total` | counter | `result` | Spreads ended: `complete`, `superseded`, `expired`. |
+| `adhdduck_controller_spread_last_duration_seconds` | gauge | | Preheat to last node registered, for the last complete spread. |
 
 ### Worker
 
 | Metric | Type | Labels | Meaning |
 |---|---|---|---|
-| `angryduck_worker_pulls_total` | counter | `node`, `result`, `registry` | Seed pulls: `success`, `failure`, `cancelled`. |
-| `angryduck_worker_pull_seconds_total` | counter | `node`, `result`, `registry` | Seconds spent in seed pulls. Divide by `pulls_total` for the average. |
-| `angryduck_worker_pulls_in_flight` | gauge | `node` | Seed pulls running now. |
-| `angryduck_worker_rescues_total` | counter | `node`, `reason`, `result` | Images fetched from peers. `reason`: `rescue` or `propagate`. `result`: `success`, `failure`, `already_present`. |
-| `angryduck_worker_rescue_bytes_total` | counter | `node`, `direction` | Bytes moved between nodes, `served` or `received`. |
-| `angryduck_worker_rescue_layers_total` | counter | `node`, `method` | Layers by delivery: `present`, `blob`, `snapshot`. |
-| `angryduck_worker_rescue_pinned_snapshots` | gauge | `node` | Snapshots pinned for a retry. |
-| `angryduck_worker_rescue_cleanups_total` | counter | `node`, `kind` | Leftovers removed: `temp_snapshot`, `temp_image`, `expired_pin`. |
-| `angryduck_worker_gc_stalled` | gauge | `node` | 1 while disk-pressure removals are paused because they freed nothing. |
-| `angryduck_worker_spread_transfers_total` | counter | `node`, `path`, `result` | Spread blobs fetched, by `path` (`registry`, `peer`) and `result` (`ok`, `failed`, `cancelled`). |
-| `angryduck_worker_spread_bytes_total` | counter | `node`, `path` | Spread bytes received (`registry`, `peer`) or `served` to peers. |
-| `angryduck_worker_spread_transfer_milliseconds_total` | counter | `node`, `path` | Time spent transferring. Bytes divided by it is the throughput per path. |
-| `angryduck_worker_spread_active` | gauge | `node`, `path` | Blobs coming in right now on that path (any number; one blob at most once per path). |
-| `angryduck_worker_spread_finalizes_total` | counter | `node`, `result` | Images registered from spread blobs. |
-| `angryduck_worker_spread_finalizing` | gauge | `node` | Images being registered (imported and unpacked) right now. Different images run side by side. |
-| `angryduck_worker_mirror_requests_total` | counter | `node`, `kind`, `result` | Mirror requests (`blob`, `manifest`): `local`, `peer`, `miss`, `error`. |
-| `angryduck_worker_mirror_bytes_total` | counter | `node`, `source` | Bytes the mirror served, `local` or `peer`. |
-| `angryduck_worker_mirror_peer_served_bytes_total` | counter | `node` | Bytes served to other nodes' mirrors. |
-| `angryduck_worker_inventory_events_total` | counter | `node`, `topic` | containerd events that changed what the node can serve; each burst settles into one inventory report. |
-| `angryduck_worker_inventory_watch_up` | gauge | `node` | 1 while the node follows containerd's events, 0 while it falls back to periodic layer scans. |
-| `angryduck_worker_gc_images_deleted_total` | counter | `node`, `tier` | Images removed: `old`, `pressure`, `rollback`, or `error`. |
-| `angryduck_worker_gc_image_returns` | gauge | `node`, `image` | Images that came back within an hour of cleanup removing them, and how many times. Only images that came back in the last hour, so the series count stays small. |
-| `angryduck_worker_gc_candidates` | gauge | `node`, `tier` | Images removable right now: `old`, `pressure`, `rollback`. |
-| `angryduck_worker_gc_cleaning` | gauge | `node` | 1 while the disk is above high and not yet back to low. |
-| `angryduck_worker_broken_image` | gauge | `node`, `image` | 1 while that image is registered on the node but can't start a container. Removed once it is repaired or no longer registered. |
-| `angryduck_worker_image_repairs_total` | counter | `node`, `result` | Broken images repaired in place (`repaired`), or not (`failed`: some piece came from no peer and not from the registry; retried at the next check). |
-| `angryduck_worker_repair_bytes_total` | counter | `node`, `source` | Bytes repairs fetched, from a `peer` or the `registry`. |
-| `angryduck_worker_temp_images_removed_total` | counter | `node` | Temporary import names a killed worker left behind, removed by the repair. |
-| `angryduck_worker_preheated_containers_running` | gauge | `node`, `repo` | Running containers from repos recently preheated on the node. |
+| `adhdduck_worker_pulls_total` | counter | `node`, `result`, `registry` | Seed pulls: `success`, `failure`, `cancelled`. |
+| `adhdduck_worker_pull_seconds_total` | counter | `node`, `result`, `registry` | Seconds spent in seed pulls. Divide by `pulls_total` for the average. |
+| `adhdduck_worker_pulls_in_flight` | gauge | `node` | Seed pulls running now. |
+| `adhdduck_worker_rescues_total` | counter | `node`, `reason`, `result` | Images fetched from peers. `reason`: `rescue` or `propagate`. `result`: `success`, `failure`, `already_present`. |
+| `adhdduck_worker_rescue_bytes_total` | counter | `node`, `direction` | Bytes moved between nodes, `served` or `received`. |
+| `adhdduck_worker_rescue_layers_total` | counter | `node`, `method` | Layers by delivery: `present`, `blob`, `snapshot`. |
+| `adhdduck_worker_rescue_pinned_snapshots` | gauge | `node` | Snapshots pinned for a retry. |
+| `adhdduck_worker_rescue_cleanups_total` | counter | `node`, `kind` | Leftovers removed: `temp_snapshot`, `temp_image`, `expired_pin`. |
+| `adhdduck_worker_gc_stalled` | gauge | `node` | 1 while disk-pressure removals are paused because they freed nothing. |
+| `adhdduck_worker_spread_transfers_total` | counter | `node`, `path`, `result` | Spread blobs fetched, by `path` (`registry`, `peer`) and `result` (`ok`, `failed`, `cancelled`). |
+| `adhdduck_worker_spread_bytes_total` | counter | `node`, `path` | Spread bytes received (`registry`, `peer`) or `served` to peers. |
+| `adhdduck_worker_spread_transfer_milliseconds_total` | counter | `node`, `path` | Time spent transferring. Bytes divided by it is the throughput per path. |
+| `adhdduck_worker_spread_active` | gauge | `node`, `path` | Blobs coming in right now on that path (any number; one blob at most once per path). |
+| `adhdduck_worker_spread_finalizes_total` | counter | `node`, `result` | Images registered from spread blobs. |
+| `adhdduck_worker_spread_finalizing` | gauge | `node` | Images being registered (imported and unpacked) right now. Different images run side by side. |
+| `adhdduck_worker_mirror_requests_total` | counter | `node`, `kind`, `result` | Mirror requests (`blob`, `manifest`): `local`, `peer`, `miss`, `error`. |
+| `adhdduck_worker_mirror_bytes_total` | counter | `node`, `source` | Bytes the mirror served, `local` or `peer`. |
+| `adhdduck_worker_mirror_peer_served_bytes_total` | counter | `node` | Bytes served to other nodes' mirrors. |
+| `adhdduck_worker_inventory_events_total` | counter | `node`, `topic` | containerd events that changed what the node can serve; each burst settles into one inventory report. |
+| `adhdduck_worker_inventory_watch_up` | gauge | `node` | 1 while the node follows containerd's events, 0 while it falls back to periodic layer scans. |
+| `adhdduck_worker_gc_images_deleted_total` | counter | `node`, `tier` | Images removed: `old`, `pressure`, `rollback`, or `error`. |
+| `adhdduck_worker_gc_image_returns` | gauge | `node`, `image` | Images that came back within an hour of cleanup removing them, and how many times. Only images that came back in the last hour, so the series count stays small. |
+| `adhdduck_worker_gc_candidates` | gauge | `node`, `tier` | Images removable right now: `old`, `pressure`, `rollback`. |
+| `adhdduck_worker_gc_cleaning` | gauge | `node` | 1 while the disk is above high and not yet back to low. |
+| `adhdduck_worker_broken_image` | gauge | `node`, `image` | 1 while that image is registered on the node but can't start a container. Removed once it is repaired or no longer registered. |
+| `adhdduck_worker_image_repairs_total` | counter | `node`, `result` | Broken images repaired in place (`repaired`), or not (`failed`: some piece came from no peer and not from the registry; retried at the next check). |
+| `adhdduck_worker_repair_bytes_total` | counter | `node`, `source` | Bytes repairs fetched, from a `peer` or the `registry`. |
+| `adhdduck_worker_temp_images_removed_total` | counter | `node` | Temporary import names a killed worker left behind, removed by the repair. |
+| `adhdduck_worker_preheated_containers_running` | gauge | `node`, `repo` | Running containers from repos recently preheated on the node. |
 
-| `angryduck_worker_containerd_calls_total` | counter | `node`, `method` | gRPC calls to containerd, by service and method (`Content/List`, `ImageService/PullImage`, ...). The load the worker puts on containerd. |
+| `adhdduck_worker_containerd_calls_total` | counter | `node`, `method` | gRPC calls to containerd, by service and method (`Content/List`, `ImageService/PullImage`, ...). The load the worker puts on containerd. |
 
 The `registry` label is filled only with `METRICS_LABEL_REGISTRY=true`.
 
@@ -146,8 +146,8 @@ The `registry` label is filled only with `METRICS_LABEL_REGISTRY=true`.
 
 | Metric | Type | Labels | Meaning |
 |---|---|---|---|
-| `angryduck_build_info` | gauge | `component`, `version`, `node` | One series per process: its version, and as the value the Unix time it started. |
-| `angryduck_process_memory_bytes` | gauge | `component`, `kind` | Refreshed every 15s. `rss_anon`: memory the process really holds. `rss_file`: its own code, shared and reclaimable by the kernel. `heap_live`: what the Go heap needs right now. `heap_retained`: freed heap kept for reuse. `heap_released`: already returned to the OS. `stacks`: goroutine stacks. |
+| `adhdduck_build_info` | gauge | `component`, `version`, `node` | One series per process: its version, and as the value the Unix time it started. |
+| `adhdduck_process_memory_bytes` | gauge | `component`, `kind` | Refreshed every 15s. `rss_anon`: memory the process really holds. `rss_file`: its own code, shared and reclaimable by the kernel. `heap_live`: what the Go heap needs right now. `heap_retained`: freed heap kept for reuse. `heap_released`: already returned to the OS. `stacks`: goroutine stacks. |
 
 `rss_anon` is the number to size against; container memory usage
 (`container_memory_working_set_bytes`) also counts `rss_file`, which the kernel
@@ -159,9 +159,9 @@ Useful queries:
 
 ```promql
 # containerd calls per minute, per worker
-sum by (node) (rate(angryduck_worker_containerd_calls_total[5m])) * 60
+sum by (node) (rate(adhdduck_worker_containerd_calls_total[5m])) * 60
 # memory each worker really holds
-angryduck_process_memory_bytes{component="worker", kind="rss_anon"}
+adhdduck_process_memory_bytes{component="worker", kind="rss_anon"}
 ```
 
 <a id="image-history"></a>
@@ -182,17 +182,17 @@ a scrape (a scrape that failed, ran late, or a Prometheus restart) is lost.
 
 | Metric | Labels | Meaning |
 |---|---|---|
-| `angryduck_controller_image_spread_started_timestamp_seconds` | `image` | When a spread (or whole-image propagation) of it started. |
-| `angryduck_controller_image_spread_seconds` | `image`, `result` | How long it took: `complete`, `superseded`, `expired`; `running` (so far) while it runs. |
-| `angryduck_controller_image_delivered_timestamp_seconds` | `image`, `node`, `via` | When a node got the image. |
-| `angryduck_controller_image_delivery_seconds` | `image`, `node`, `via` | How long after the preheat it got it (for a rescue, after its pull got stuck). |
-| `angryduck_controller_image_received_bytes` | `image`, `node`, `path` | Bytes the node received for it: `registry`, `peer`, `image`, `propagate`, `rescue`. Set when the node got it, or when its spread ended without it. |
-| `angryduck_controller_image_transfer_seconds` | `image`, `node`, `path` | Seconds spent receiving it, summed over transfers. |
-| `angryduck_worker_image_pull_seconds` | `node`, `image`, `result` | A seed pull of it from the registry. |
-| `angryduck_worker_image_repair_seconds` | `node`, `image`, `result` | A repair of it: `repaired`, `failed`. |
-| `angryduck_worker_image_repair_timestamp_seconds` | `node`, `image`, `result` | When that repair ended. |
-| `angryduck_worker_image_repair_bytes` | `node`, `image`, `source` | Bytes that repair fetched, from a `peer` or the `registry`. |
-| `angryduck_worker_gc_image_removed_timestamp_seconds` | `node`, `image`, `tier` | When the cleanup removed it. |
+| `adhdduck_controller_image_spread_started_timestamp_seconds` | `image` | When a spread (or whole-image propagation) of it started. |
+| `adhdduck_controller_image_spread_seconds` | `image`, `result` | How long it took: `complete`, `superseded`, `expired`; `running` (so far) while it runs. |
+| `adhdduck_controller_image_delivered_timestamp_seconds` | `image`, `node`, `via` | When a node got the image. |
+| `adhdduck_controller_image_delivery_seconds` | `image`, `node`, `via` | How long after the preheat it got it (for a rescue, after its pull got stuck). |
+| `adhdduck_controller_image_received_bytes` | `image`, `node`, `path` | Bytes the node received for it: `registry`, `peer`, `image`, `propagate`, `rescue`. Set when the node got it, or when its spread ended without it. |
+| `adhdduck_controller_image_transfer_seconds` | `image`, `node`, `path` | Seconds spent receiving it, summed over transfers. |
+| `adhdduck_worker_image_pull_seconds` | `node`, `image`, `result` | A seed pull of it from the registry. |
+| `adhdduck_worker_image_repair_seconds` | `node`, `image`, `result` | A repair of it: `repaired`, `failed`. |
+| `adhdduck_worker_image_repair_timestamp_seconds` | `node`, `image`, `result` | When that repair ended. |
+| `adhdduck_worker_image_repair_bytes` | `node`, `image`, `source` | Bytes that repair fetched, from a `peer` or the `registry`. |
+| `adhdduck_worker_gc_image_removed_timestamp_seconds` | `node`, `image`, `tier` | When the cleanup removed it. |
 
 `via` says how the node got the image:
 
@@ -205,10 +205,10 @@ a scrape (a scrape that failed, ran late, or a Prometheus restart) is lost.
 | `seed` | Pulled whole from the registry, in a whole-image propagation. |
 | `propagate` | The whole image from a peer, in a whole-image propagation. |
 | `rescue` | Fetched from a peer after its pull got stuck. |
-| `kubelet` | It got the image without Angry Duck, during the spread. |
+| `kubelet` | It got the image without ADHD Duck, during the spread. |
 
 One more gauge is about the future rather than the past:
-`angryduck_worker_gc_image_removal_seconds{node, image, tier}` lists the unused
+`adhdduck_worker_gc_image_removal_seconds{node, image, tier}` lists the unused
 images the age rule will remove, and in how many seconds (`0`: at the next
 check). Disk pressure removes them sooner, oldest first. Images kept for
 rollback are not listed.
@@ -226,7 +226,7 @@ last copy is removed and every pod needing it is stuck.
 So the controller keeps asking. For every image reference a fresh node
 holds (tags and digests), it sends a `HEAD` for the manifest to the image's
 registry with the credentials from `REGISTRY_CREDENTIALS_PATH`, the same ones
-Angry Duck pulls with. Each image is asked every `ORIGIN_CHECK_INTERVAL_S`
+ADHD Duck pulls with. Each image is asked every `ORIGIN_CHECK_INTERVAL_S`
 (an hour), and one the registry didn't serve every quarter of that, so a fix
 shows within minutes. The answers:
 
@@ -234,7 +234,7 @@ shows within minutes. The answers:
 |---|---|
 | `ok` | The registry serves the manifest. |
 | `missing` | The registry says it doesn't exist: the tag, manifest or repository is gone. |
-| `denied` | The registry refused Angry Duck's credentials, or wants credentials and none are configured for it. A whole registry turning `denied` usually means its pull secret changed. The controller reads the secret at startup, so after rotating it, restart the controller. |
+| `denied` | The registry refused ADHD Duck's credentials, or wants credentials and none are configured for it. A whole registry turning `denied` usually means its pull secret changed. The controller reads the secret at startup, so after rotating it, restart the controller. |
 | `unreachable` | No usable answer: network errors, timeouts, rate limits, server errors. |
 
 What it costs: one `HEAD` (no download) per image per interval, plus a token
@@ -254,64 +254,64 @@ their images show as `unreachable`; list the registries worth checking in
 
 ```yaml
 groups:
-  - name: angryduck
+  - name: adhdduck
     rules:
-      - alert: AngryDuckRescueFailing
-        expr: angryduck_controller_rescue_consecutive_failures >= 3
+      - alert: ADHDDuckRescueFailing
+        expr: adhdduck_controller_rescue_consecutive_failures >= 3
         for: 10m
         annotations:
           summary: "Rescue of {{ $labels.image }} on {{ $labels.node }} keeps failing"
 
-      - alert: AngryDuckImageUnavailable
+      - alert: ADHDDuckImageUnavailable
         expr: |
-          increase(angryduck_controller_rescues_total{result=~"no_source|no_target"}[30m]) > 0
-            and on (node) angryduck_controller_rescue_stuck_images > 0
+          increase(adhdduck_controller_rescues_total{result=~"no_source|no_target"}[30m]) > 0
+            and on (node) adhdduck_controller_rescue_stuck_images > 0
         annotations:
           summary: "{{ $labels.node }} can't pull an image and no node has it"
 
-      - alert: AngryDuckImageGoneFromRegistry
-        expr: max by (image, status) (angryduck_controller_origin_unavailable) > 0
+      - alert: ADHDDuckImageGoneFromRegistry
+        expr: max by (image, status) (adhdduck_controller_origin_unavailable) > 0
         for: 30m
         annotations:
           summary: "{{ $labels.image }} is {{ $labels.status }} at its registry; {{ $value }} node(s) still hold it"
 
-      - alert: AngryDuckLastCopy
-        expr: max by (image) (angryduck_controller_origin_unavailable) == 1
+      - alert: ADHDDuckLastCopy
+        expr: max by (image) (adhdduck_controller_origin_unavailable) == 1
         annotations:
           summary: "Only one node holds {{ $labels.image }}, and its registry doesn't serve it"
 
-      - alert: AngryDuckRegistryDenied
+      - alert: ADHDDuckRegistryDenied
         expr: |
-          sum by (registry) (angryduck_controller_origin_images{status="denied"})
-            / sum by (registry) (angryduck_controller_origin_images{status=~"ok|missing|denied"}) > 0.5
+          sum by (registry) (adhdduck_controller_origin_images{status="denied"})
+            / sum by (registry) (adhdduck_controller_origin_images{status=~"ok|missing|denied"}) > 0.5
         for: 15m
         annotations:
-          summary: "{{ $labels.registry }} refuses Angry Duck's credentials; was its pull secret rotated?"
+          summary: "{{ $labels.registry }} refuses ADHD Duck's credentials; was its pull secret rotated?"
 
-      - alert: AngryDuckBrokenImage
-        expr: angryduck_worker_broken_image > 0
+      - alert: ADHDDuckBrokenImage
+        expr: adhdduck_worker_broken_image > 0
         for: 15m
         annotations:
           summary: "{{ $labels.image }} on {{ $labels.node }} can't start containers and the repair can't get its missing pieces (no peer has them, and the registry doesn't serve them)"
 
-      - alert: AngryDuckDiskFullNotFromImages
-        expr: angryduck_worker_gc_stalled == 1
+      - alert: ADHDDuckDiskFullNotFromImages
+        expr: adhdduck_worker_gc_stalled == 1
         for: 2h
         annotations:
           summary: "{{ $labels.node }} is above the cleanup threshold, and removing images doesn't free space"
 
-      - alert: AngryDuckSpreadStalled
+      - alert: ADHDDuckSpreadStalled
         expr: |
-          max by (image) (angryduck_controller_spread_nodes{state="waiting"}) > 0
-            and max by (image) (angryduck_controller_spread_layers{state="missing"}) > 0
+          max by (image) (adhdduck_controller_spread_nodes{state="waiting"}) > 0
+            and max by (image) (adhdduck_controller_spread_layers{state="missing"}) > 0
         for: 15m
         annotations:
           summary: "Spread of {{ $labels.image }} has layers nobody holds or pulls"
 
-      - alert: AngryDuckSnapshotHeavy
+      - alert: ADHDDuckSnapshotHeavy
         expr: |
-          sum(rate(angryduck_worker_rescue_layers_total{method="snapshot"}[1d]))
-            / sum(rate(angryduck_worker_rescue_layers_total{method=~"blob|snapshot"}[1d])) > 0.5
+          sum(rate(adhdduck_worker_rescue_layers_total{method="snapshot"}[1d]))
+            / sum(rate(adhdduck_worker_rescue_layers_total{method=~"blob|snapshot"}[1d])) > 0.5
         annotations:
           summary: "Most transferred layers are snapshots; check discard_unpacked_layers"
 ```
@@ -320,10 +320,10 @@ Useful ad-hoc queries:
 
 ```promql
 # Share of containerd's content served inside the cluster
-sum(rate(angryduck_worker_mirror_requests_total{result=~"local|peer"}[1h]))
-  / sum(rate(angryduck_worker_mirror_requests_total[1h]))
+sum(rate(adhdduck_worker_mirror_requests_total{result=~"local|peer"}[1h]))
+  / sum(rate(adhdduck_worker_mirror_requests_total[1h]))
 
 # Average seed pull duration per node
-sum by (node) (rate(angryduck_worker_pull_seconds_total{result="success"}[1h]))
-  / sum by (node) (rate(angryduck_worker_pulls_total{result="success"}[1h]))
+sum by (node) (rate(adhdduck_worker_pull_seconds_total{result="success"}[1h]))
+  / sum by (node) (rate(adhdduck_worker_pulls_total{result="success"}[1h]))
 ```

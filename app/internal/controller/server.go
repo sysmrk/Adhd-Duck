@@ -1,17 +1,17 @@
 package controller
 
 import (
-	"angryduck/internal/httpinput"
+	"adhdduck/internal/httpinput"
 	"encoding/json"
 	"net/http"
 	"strings"
 	"time"
 
-	"angryduck/internal/imageref"
-	"angryduck/internal/logging"
-	"angryduck/internal/metrics"
-	"angryduck/internal/model"
-	"angryduck/internal/sharedtoken"
+	"adhdduck/internal/imageref"
+	"adhdduck/internal/logging"
+	"adhdduck/internal/metrics"
+	"adhdduck/internal/model"
+	"adhdduck/internal/sharedtoken"
 )
 
 // Server wires the registry + ranker up to HTTP handlers.
@@ -123,12 +123,12 @@ func (s *Server) handlePreheat(w http.ResponseWriter, r *http.Request) {
 	// rather than inconsistent forms of the same image.
 	normalized := imageref.Normalize(req.Image)
 	if normalized != req.Image {
-		logging.Infof("angryduck-controller: normalized image reference %q to %q", req.Image, normalized)
+		logging.Infof("adhdduck-controller: normalized image reference %q to %q", req.Image, normalized)
 	}
 	req.Image = normalized
 
 	if s.registry.FreshCount() == 0 {
-		logging.Warnf("angryduck-controller: rejecting preheat for image=%s: zero fresh workers reporting", req.Image)
+		logging.Warnf("adhdduck-controller: rejecting preheat for image=%s: zero fresh workers reporting", req.Image)
 		writeJSON(w, http.StatusServiceUnavailable, model.PreheatResponse{
 			Accepted: false,
 			Reason:   "no fresh workers reporting; refusing to guess at disk state",
@@ -139,11 +139,11 @@ func (s *Server) handlePreheat(w http.ResponseWriter, r *http.Request) {
 	if s.spreader != nil {
 		ordered, err := s.spreader.Start(r.Context(), req.Image)
 		if err == nil {
-			logging.Infof("angryduck-controller: accepted preheat for image=%s: spreading blob by blob, %d node(s) pulling from the registry first: %v", req.Image, len(ordered), ordered)
+			logging.Infof("adhdduck-controller: accepted preheat for image=%s: spreading blob by blob, %d node(s) pulling from the registry first: %v", req.Image, len(ordered), ordered)
 			writeJSON(w, http.StatusAccepted, model.PreheatResponse{Accepted: true, TargetImage: req.Image, OrderedNodes: ordered})
 			return
 		}
-		logging.Warnf("angryduck-controller: can't spread image=%s blob by blob (%v); seeding it whole instead", req.Image, err)
+		logging.Warnf("adhdduck-controller: can't spread image=%s blob by blob (%v); seeding it whole instead", req.Image, err)
 	}
 
 	if len(s.ranker.CapacityEligible(s.ranker.excludeMatching(s.registry.FreshWorkers()))) == 0 {
@@ -156,7 +156,7 @@ func (s *Server) handlePreheat(w http.ResponseWriter, r *http.Request) {
 		s.propagator.Start(req.Image)
 	}
 
-	logging.Infof("angryduck-controller: accepted preheat for image=%s, ordered %d node(s): %v", req.Image, len(ordered), ordered)
+	logging.Infof("adhdduck-controller: accepted preheat for image=%s, ordered %d node(s): %v", req.Image, len(ordered), ordered)
 	writeJSON(w, http.StatusAccepted, model.PreheatResponse{
 		Accepted:     true,
 		TargetImage:  req.Image,
@@ -185,10 +185,10 @@ func (s *Server) handleReport(w http.ResponseWriter, r *http.Request) {
 	ack := s.registry.Update(rep)
 	if rep.Layers != nil {
 		l := rep.Layers
-		logging.Debugf("angryduck-controller: layer sync from node=%s full=%v seq=%d base=%d blobs=+%d/-%d snaps=+%d/-%d -> held=%d resync=%v",
+		logging.Debugf("adhdduck-controller: layer sync from node=%s full=%v seq=%d base=%d blobs=+%d/-%d snaps=+%d/-%d -> held=%d resync=%v",
 			rep.NodeID, l.Full, l.Seq, l.Base, len(l.AddBlobs), len(l.DelBlobs), len(l.AddSnaps), len(l.DelSnaps), ack.LayersSeq, ack.LayersResync)
 	}
-	logging.Debugf("angryduck-controller: report from node=%s address=%s utilization=%.1f%%", rep.NodeID, rep.Address, rep.Utilization*100)
+	logging.Debugf("adhdduck-controller: report from node=%s address=%s utilization=%.1f%%", rep.NodeID, rep.Address, rep.Utilization*100)
 	writeJSON(w, http.StatusOK, ack)
 }
 

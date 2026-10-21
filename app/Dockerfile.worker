@@ -4,8 +4,8 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY internal ./internal
 COPY cmd/worker ./cmd/worker
-RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/angryduck-worker ./cmd/worker
+RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/adhdduck-worker ./cmd/worker
 
 FROM gcr.io/distroless/static-debian13
-COPY --from=build /out/angryduck-worker /angryduck-worker
-ENTRYPOINT ["/angryduck-worker"]
+COPY --from=build /out/adhdduck-worker /adhdduck-worker
+ENTRYPOINT ["/adhdduck-worker"]

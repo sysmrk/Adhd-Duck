@@ -10,44 +10,44 @@ import (
 	"sync"
 	"time"
 
-	"angryduck/internal/imageref"
-	"angryduck/internal/logging"
-	"angryduck/internal/metrics"
+	"adhdduck/internal/imageref"
+	"adhdduck/internal/logging"
+	"adhdduck/internal/metrics"
 )
 
 var (
 	imagesDeletedTotal = metrics.NewCounterVec(
-		"angryduck_worker_gc_images_deleted_total",
+		"adhdduck_worker_gc_images_deleted_total",
 		"Images this node's cleanup removed, by tier: old (unused for GC_UNUSED_FOR_S, removed whatever the disk), pressure (unused for less, removed only because the disk went above GC_HIGH), rollback (one of the newest GC_ROLLBACK_KEEP of its repo, removed only while the disk stays above GC_HIGH), or error.",
 		"node", "tier",
 	)
 	gcImageReturns = metrics.NewGaugeVec(
-		"angryduck_worker_gc_image_returns",
+		"adhdduck_worker_gc_image_returns",
 		"Images that came back to this node within an hour of this cleanup removing them, and how many times: something on the node still uses them, so each removal costs a re-pull. Only images that came back in the last hour are listed. image is the tag, else repo@digest, else the image ID.",
 		"node", "image",
 	)
 	gcCleaning = metrics.NewGaugeVec(
-		"angryduck_worker_gc_cleaning",
+		"adhdduck_worker_gc_cleaning",
 		"1 while this node's disk-pressure cleanup is active: disk went above GC_HIGH and hasn't come down to GC_LOW yet.",
 		"node",
 	)
 	gcStalled = metrics.NewGaugeVec(
-		"angryduck_worker_gc_stalled",
+		"adhdduck_worker_gc_stalled",
 		"1 while this node's disk-pressure cleanup has stopped because removing images didn't free space (the disk is filled by something else: running images, volumes, logs). The 6h rule still runs; pressure and rollback removals resume after an hour, or once the disk grows by 1%.",
 		"node",
 	)
 	gcImageRemoved = metrics.NewRecentGaugeVec(
-		"angryduck_worker_gc_image_removed_timestamp_seconds",
+		"adhdduck_worker_gc_image_removed_timestamp_seconds",
 		"When this node's cleanup removed the image, as Unix time, by tier. An event, shown for METRICS_EVENT_TTL_S. image is the tag, else repo@digest, else the image ID.",
 		"node", "image", "tier",
 	)
 	gcImageRemoval = metrics.NewGaugeVec(
-		"angryduck_worker_gc_image_removal_seconds",
+		"adhdduck_worker_gc_image_removal_seconds",
 		"Images unused on this node that the age rule will remove, and in how many seconds (0: at the next check). Disk pressure removes them sooner, oldest first. Images kept for rollback are not listed. tier: old or pressure.",
 		"node", "image", "tier",
 	)
 	gcCandidates = metrics.NewGaugeVec(
-		"angryduck_worker_gc_candidates",
+		"adhdduck_worker_gc_candidates",
 		"Images the cleanup could remove, by tier (old, pressure, rollback). old goes on its own; pressure and rollback only while cleaning.",
 		"node", "tier",
 	)
@@ -175,7 +175,7 @@ func (g *ImageGC) OnDone(fn func()) { g.onDone = fn }
 
 // Run blocks, ticking until ctx is done.
 func (g *ImageGC) Run(ctx context.Context) {
-	logging.Infof("angryduck-worker[%s]: image cleanup started: interval=%s high=%.2f low=%.2f unused_for=%s rollback_keep=%d batch=%d protect=%v state=%s",
+	logging.Infof("adhdduck-worker[%s]: image cleanup started: interval=%s high=%.2f low=%.2f unused_for=%s rollback_keep=%d batch=%d protect=%v state=%s",
 		g.nodeID, g.cfg.Interval, g.cfg.High, g.cfg.Low, g.cfg.UnusedFor, g.cfg.RollbackKeep, g.cfg.Batch, g.cfg.ProtectSubstrings, g.cfg.StatePath)
 	t := time.NewTicker(g.cfg.Interval)
 	defer t.Stop()
@@ -251,7 +251,7 @@ func (g *ImageGC) Tick(ctx context.Context) {
 	now := time.Now()
 	groups, inUse, err := g.sample(ctx, now)
 	if err != nil {
-		logging.Warnf("angryduck-worker[%s]: image cleanup: %v", g.nodeID, err)
+		logging.Warnf("adhdduck-worker[%s]: image cleanup: %v", g.nodeID, err)
 		return
 	}
 	defer g.save(false)
@@ -261,24 +261,24 @@ func (g *ImageGC) Tick(ctx context.Context) {
 	// doesn't need one.
 	u, uerr := g.util()
 	if uerr != nil {
-		logging.Warnf("angryduck-worker[%s]: image cleanup: reading disk usage: %v", g.nodeID, uerr)
+		logging.Warnf("adhdduck-worker[%s]: image cleanup: reading disk usage: %v", g.nodeID, uerr)
 	}
 	g.mu.Lock()
 	switch {
 	case uerr != nil:
 	case u >= g.cfg.High && !g.cleaning:
 		g.cleaning = true
-		logging.Infof("angryduck-worker[%s]: image cleanup: disk at %.1f%%, above %.0f%%: removing unused images, oldest first, until %.0f%%",
+		logging.Infof("adhdduck-worker[%s]: image cleanup: disk at %.1f%%, above %.0f%%: removing unused images, oldest first, until %.0f%%",
 			g.nodeID, u*100, g.cfg.High*100, g.cfg.Low*100)
 	case u <= g.cfg.Low && g.cleaning:
 		g.cleaning = false
 		g.stallUntil = time.Time{}
-		logging.Infof("angryduck-worker[%s]: image cleanup: disk at %.1f%%, done", g.nodeID, u*100)
+		logging.Infof("adhdduck-worker[%s]: image cleanup: disk at %.1f%%, done", g.nodeID, u*100)
 	}
 	cleaning := g.cleaning && uerr == nil
 	stalled := cleaning && now.Before(g.stallUntil) && u < g.stallAt+gcStallRegrow
 	if cleaning && !stalled && !g.stallUntil.IsZero() {
-		logging.Infof("angryduck-worker[%s]: image cleanup: disk at %.1f%%, trying removals again", g.nodeID, u*100)
+		logging.Infof("adhdduck-worker[%s]: image cleanup: disk at %.1f%%, trying removals again", g.nodeID, u*100)
 		g.stallUntil = time.Time{}
 	}
 	g.mu.Unlock()
@@ -316,7 +316,7 @@ func (g *ImageGC) Tick(ctx context.Context) {
 	if !cleaning || stalled {
 		// Age rule only: everything unused for UnusedFor goes.
 		if len(old) > 0 {
-			logging.Infof("angryduck-worker[%s]: image cleanup: removing %d image(s) unused for %s", g.nodeID, len(old), g.cfg.UnusedFor)
+			logging.Infof("adhdduck-worker[%s]: image cleanup: removing %d image(s) unused for %s", g.nodeID, len(old), g.cfg.UnusedFor)
 		}
 		removed, _, _ = g.remove(ctx, old, nil, nil)
 	} else {
@@ -342,11 +342,11 @@ func (g *ImageGC) Tick(ctx context.Context) {
 		switch {
 		case futile:
 			g.stall(now, u)
-			logging.Warnf("angryduck-worker[%s]: image cleanup: removed %d image(s) but the disk only went from %.1f%% to %.1f%%: it's filled by something else (running images, volumes, logs). Leaving the rest, rollback images included; trying again in %s or once the disk grows by %.0f%%",
+			logging.Warnf("adhdduck-worker[%s]: image cleanup: removed %d image(s) but the disk only went from %.1f%% to %.1f%%: it's filled by something else (running images, volumes, logs). Leaving the rest, rollback images included; trying again in %s or once the disk grows by %.0f%%",
 				g.nodeID, removed, start*100, u*100, gcStallFor, gcStallRegrow*100)
 		case ok && removed == 0 && u >= g.cfg.High:
 			g.stall(now, u)
-			logging.Warnf("angryduck-worker[%s]: image cleanup: disk at %.1f%% but nothing is removable (every image is in use, protected or being pulled); looking again in %s or once the disk grows by %.0f%%",
+			logging.Warnf("adhdduck-worker[%s]: image cleanup: disk at %.1f%% but nothing is removable (every image is in use, protected or being pulled); looking again in %s or once the disk grows by %.0f%%",
 				g.nodeID, u*100, gcStallFor, gcStallRegrow*100)
 		}
 	}
@@ -384,7 +384,7 @@ func (g *ImageGC) remove(ctx context.Context, list []candidate, u *float64, stop
 			names = append(names, c.names...)
 		}
 		if err := g.store.DeleteImages(ctx, names...); err != nil {
-			logging.Warnf("angryduck-worker[%s]: image cleanup: removing %v: %v", g.nodeID, names, err)
+			logging.Warnf("adhdduck-worker[%s]: image cleanup: removing %v: %v", g.nodeID, names, err)
 			imagesDeletedTotal.Add(int64(len(batch)), g.nodeID, "error")
 			return removed, false, false
 		}
@@ -399,7 +399,7 @@ func (g *ImageGC) remove(ctx context.Context, list []candidate, u *float64, stop
 			imagesDeletedTotal.Add(1, g.nodeID, c.tier)
 			gcImageRemoved.Set(float64(now.Unix()), g.nodeID, displayName(c.names), c.tier)
 			gcImageRemoval.Delete(g.nodeID, displayName(c.names), c.tier)
-			logging.Infof("angryduck-worker[%s]: image cleanup: removed %s (%s tier, unused for %s)", g.nodeID, strings.Join(c.names, " "), c.tier, c.age.Round(time.Minute))
+			logging.Infof("adhdduck-worker[%s]: image cleanup: removed %s (%s tier, unused for %s)", g.nodeID, strings.Join(c.names, " "), c.tier, c.age.Round(time.Minute))
 		}
 		if u == nil && len(list) == 0 {
 			break // nothing to measure and nothing left to pace
@@ -504,7 +504,7 @@ func (g *ImageGC) cameBackLocked(d string, r removal, now time.Time) {
 	}
 	c.name, c.last, g.churnPub = r.name, now, true
 	c.count++
-	logging.Warnf("angryduck-worker[%s]: image cleanup: %s came back %s after being removed (%d time(s) within %s): something on this node still uses it",
+	logging.Warnf("adhdduck-worker[%s]: image cleanup: %s came back %s after being removed (%d time(s) within %s): something on this node still uses it",
 		g.nodeID, r.name, now.Sub(r.at).Round(time.Second), c.count, returnWindow)
 }
 
@@ -594,7 +594,7 @@ func (g *ImageGC) load() {
 	for d, t := range st.LastUsed {
 		g.lastUsed[d] = time.Unix(t, 0)
 	}
-	logging.Infof("angryduck-worker[%s]: image cleanup: loaded usage times of %d image(s) from %s", g.nodeID, len(st.FirstSeen), g.cfg.StatePath)
+	logging.Infof("adhdduck-worker[%s]: image cleanup: loaded usage times of %d image(s) from %s", g.nodeID, len(st.FirstSeen), g.cfg.StatePath)
 }
 
 // save writes usage times when the image set changed, and otherwise at

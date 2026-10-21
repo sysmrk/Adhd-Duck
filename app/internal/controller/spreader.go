@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"angryduck/internal/httpinput"
+	"adhdduck/internal/httpinput"
 	"bytes"
 	"context"
 	"crypto/rand"
@@ -16,63 +16,63 @@ import (
 	"sync"
 	"time"
 
-	"angryduck/internal/imageref"
-	"angryduck/internal/layerindex"
-	"angryduck/internal/logging"
-	"angryduck/internal/metrics"
-	"angryduck/internal/model"
-	"angryduck/internal/registryclient"
-	"angryduck/internal/sharedtoken"
+	"adhdduck/internal/imageref"
+	"adhdduck/internal/layerindex"
+	"adhdduck/internal/logging"
+	"adhdduck/internal/metrics"
+	"adhdduck/internal/model"
+	"adhdduck/internal/registryclient"
+	"adhdduck/internal/sharedtoken"
 )
 
 var (
 	spreadNodes = metrics.NewGaugeVec(
-		"angryduck_controller_spread_nodes",
+		"adhdduck_controller_spread_nodes",
 		"Nodes per image being spread, by state: done, finalizing (registering the image), transferring, waiting (needs blobs, nothing to fetch right now), skipped (excluded or disk too full). Only while the spread runs.",
 		"image", "state",
 	)
 	spreadLayers = metrics.NewGaugeVec(
-		"angryduck_controller_spread_layers",
+		"adhdduck_controller_spread_layers",
 		"Layers per image being spread, by state: held (some node has the blob, peers can fetch it), pulling (only coming from the registry right now), missing (nobody has it, nothing fetching it). Only while the spread runs.",
 		"image", "state",
 	)
 	spreadNodeMissingBytes = metrics.NewGaugeVec(
-		"angryduck_controller_spread_node_missing_bytes",
+		"adhdduck_controller_spread_node_missing_bytes",
 		"Bytes of the image each node still lacks. Only nodes not done and not too full, only while the spread runs.",
 		"image", "node",
 	)
 	spreadNodeMissingLayers = metrics.NewGaugeVec(
-		"angryduck_controller_spread_node_missing_layers",
+		"adhdduck_controller_spread_node_missing_layers",
 		"Layers of the image each node still lacks. Only nodes not done and not too full, only while the spread runs.",
 		"image", "node",
 	)
 	spreadTransfer = metrics.NewGaugeVec(
-		"angryduck_controller_spread_transfer_bytes",
+		"adhdduck_controller_spread_transfer_bytes",
 		"Transfers running right now, one series each: the blob's size, by image, receiving node, path (registry, peer), source (registry or the sending node) and blob (first 12 hex digits of its digest).",
 		"image", "node", "path", "source", "blob",
 	)
 	spreadTransfersTotal = metrics.NewCounterVec(
-		"angryduck_controller_spread_transfers_total",
+		"adhdduck_controller_spread_transfers_total",
 		"Spread transfers that ended, by path (registry, peer, image) and result: ok, failed, cancelled (lost a race), present (the node already had it), rejected (the node was busy or unreachable).",
 		"path", "result",
 	)
 	spreadBytesTotal = metrics.NewCounterVec(
-		"angryduck_controller_spread_bytes_total",
+		"adhdduck_controller_spread_bytes_total",
 		"Bytes nodes reported receiving for spreads, by path. path=registry is everything the registry served for spreads.",
 		"path",
 	)
 	spreadFinalizesTotal = metrics.NewCounterVec(
-		"angryduck_controller_spread_finalizes_total",
+		"adhdduck_controller_spread_finalizes_total",
 		"Nodes told to register a spread image once they held every layer, by result.",
 		"result",
 	)
 	spreadsTotal = metrics.NewCounterVec(
-		"angryduck_controller_spreads_total",
+		"adhdduck_controller_spreads_total",
 		"Finished spreads: complete (every eligible node has the image), superseded (a newer tag of the same repo was pushed) or expired (the window ran out).",
 		"result",
 	)
 	spreadLastSeconds = metrics.NewGaugeVec(
-		"angryduck_controller_spread_last_duration_seconds",
+		"adhdduck_controller_spread_last_duration_seconds",
 		"How long the last complete spread took, from the preheat to the last node registering the image.",
 	)
 )
@@ -290,7 +290,7 @@ func (s *Spreader) Start(ctx context.Context, image string) ([]string, error) {
 	for other, job := range s.jobs {
 		if repo != "" && imageref.Repo(other) == repo {
 			if !job.completed { // a complete one was already counted
-				logging.Infof("angryduck-controller: spread: image=%s superseded by image=%s", other, image)
+				logging.Infof("adhdduck-controller: spread: image=%s superseded by image=%s", other, image)
 				spreadsTotal.Inc("superseded")
 				recordSpreadEnd(job.image, "superseded", time.Since(job.started))
 			}
@@ -310,7 +310,7 @@ func (s *Spreader) Start(ctx context.Context, image string) ([]string, error) {
 	recordSpreadStart(image, job.started)
 	s.mu.Unlock()
 	s.sendDrops(drops)
-	logging.Infof("angryduck-controller: spread: image=%s job=%s: %d layer(s), %d bytes, blob by blob to every eligible node",
+	logging.Infof("adhdduck-controller: spread: image=%s job=%s: %d layer(s), %d bytes, blob by blob to every eligible node",
 		image, job.id, len(res.Layers), job.total)
 
 	s.tick(s.baseCtx())
@@ -352,7 +352,7 @@ func (s *Spreader) Run(ctx context.Context) {
 	s.mu.Unlock()
 	t := time.NewTicker(s.cfg.Interval)
 	defer t.Stop()
-	logging.Infof("angryduck-controller: spreader started: max_registry=%d race_per_blob=%d per_source=%d max_utilization=%.2f transfer_timeout=%s window=%s exclude=%v",
+	logging.Infof("adhdduck-controller: spreader started: max_registry=%d race_per_blob=%d per_source=%d max_utilization=%.2f transfer_timeout=%s window=%s exclude=%v",
 		s.cfg.MaxRegistry, s.cfg.RacePerBlob, s.cfg.PerSource, s.cfg.MaxUtilization, s.cfg.TransferTimeout, s.cfg.Window, s.cfg.Exclude)
 	for {
 		select {
@@ -536,7 +536,7 @@ func (s *Spreader) planLocked(j *sjob, fresh []*workerEntry, byNode map[string]*
 			skippedNodes = append(skippedNodes, w.NodeID)
 			if !n.skipLogged {
 				n.skipLogged = true
-				logging.Infof("angryduck-controller: spread: node=%s gets nothing of image=%s for now: disk at %.1f%%, above %.0f%% (PROPAGATE_MAX_UTILIZATION); it receives the image once cleanup makes room",
+				logging.Infof("adhdduck-controller: spread: node=%s gets nothing of image=%s for now: disk at %.1f%%, above %.0f%% (PROPAGATE_MAX_UTILIZATION); it receives the image once cleanup makes room",
 					w.NodeID, j.image, w.Utilization*100, s.cfg.MaxUtilization*100)
 			}
 			continue
@@ -558,10 +558,10 @@ func (s *Spreader) planLocked(j *sjob, fresh []*workerEntry, byNode map[string]*
 			j.completed = true
 			took := now.Sub(j.started)
 			if skipped == 0 {
-				logging.Infof("angryduck-controller: spread: image=%s is on every eligible node (%d) after %s", j.image, done, took.Round(time.Second))
+				logging.Infof("adhdduck-controller: spread: image=%s is on every eligible node (%d) after %s", j.image, done, took.Round(time.Second))
 			} else {
 				sort.Strings(skippedNodes)
-				logging.Infof("angryduck-controller: spread: image=%s is on every node with room (%d) after %s; %d node(s) too full get it once cleanup makes room: %s",
+				logging.Infof("adhdduck-controller: spread: image=%s is on every node with room (%d) after %s; %d node(s) too full get it once cleanup makes room: %s",
 					j.image, done, took.Round(time.Second), skipped, strings.Join(skippedNodes, ", "))
 			}
 			spreadsTotal.Inc("complete")
@@ -574,7 +574,7 @@ func (s *Spreader) planLocked(j *sjob, fresh []*workerEntry, byNode map[string]*
 	}
 	if expired && !busy {
 		if !j.completed {
-			logging.Warnf("angryduck-controller: spread: window for image=%s ran out with %d node(s) still missing it", j.image, len(needs)+skipped)
+			logging.Warnf("adhdduck-controller: spread: window for image=%s ran out with %d node(s) still missing it", j.image, len(needs)+skipped)
 			spreadsTotal.Inc("expired")
 			recordSpreadEnd(j.image, "expired", now.Sub(j.started))
 		}
@@ -804,7 +804,7 @@ func (s *Spreader) expireLocked(j *sjob, node string, n *snode, now time.Time) {
 	kept := n.xfers[:0]
 	for _, x := range n.xfers {
 		if now.Sub(x.at) > s.cfg.TransferTimeout {
-			logging.Warnf("angryduck-controller: spread: no word from node=%s on %s transfer of image=%s for %s; forgetting it",
+			logging.Warnf("adhdduck-controller: spread: no word from node=%s on %s transfer of image=%s for %s; forgetting it",
 				node, x.path, j.image, now.Sub(x.at).Round(time.Second))
 			continue
 		}
@@ -966,7 +966,7 @@ func (s *Spreader) sendFetch(ctx context.Context, o order) {
 		}
 		s.backoffLocked(n)
 		spreadTransfersTotal.Inc(o.fetch.Path, "rejected")
-		logging.Warnf("angryduck-controller: spread: ordering node=%s to fetch %s of image=%s failed: %v", o.node, o.digest, o.job.image, err)
+		logging.Warnf("adhdduck-controller: spread: ordering node=%s to fetch %s of image=%s failed: %v", o.node, o.digest, o.job.image, err)
 	}
 	s.wakeup.wake()
 }
@@ -999,7 +999,7 @@ func (s *Spreader) sendFinalize(ctx context.Context, o order) {
 		}
 		s.backoffLocked(n)
 		spreadFinalizesTotal.Inc("failure")
-		logging.Warnf("angryduck-controller: spread: node=%s couldn't register image=%s: %v", o.node, j.image, err)
+		logging.Warnf("adhdduck-controller: spread: node=%s couldn't register image=%s: %v", o.node, j.image, err)
 		return
 	}
 	n.done, n.fails = true, 0
@@ -1009,7 +1009,7 @@ func (s *Spreader) sendFinalize(ctx context.Context, o order) {
 		n.recorded = true
 	}
 	spreadFinalizesTotal.Inc("success")
-	logging.Infof("angryduck-controller: spread: node=%s registered image=%s", o.node, j.image)
+	logging.Infof("adhdduck-controller: spread: node=%s registered image=%s", o.node, j.image)
 }
 
 func (s *Spreader) sendImage(ctx context.Context, o order) {
@@ -1028,7 +1028,7 @@ func (s *Spreader) sendImage(ctx context.Context, o order) {
 	if err != nil {
 		s.backoffLocked(n)
 		spreadTransfersTotal.Inc("image", "failed")
-		logging.Warnf("angryduck-controller: spread: node=%s couldn't get image=%s whole from %s: %v", o.node, o.job.image, o.image[0].NodeID, err)
+		logging.Warnf("adhdduck-controller: spread: node=%s couldn't get image=%s whole from %s: %v", o.node, o.job.image, o.image[0].NodeID, err)
 		return
 	}
 	n.done, n.fails = true, 0
@@ -1146,7 +1146,7 @@ func (s *Spreader) done(d model.SpreadDone) {
 			j.regFails[i]++
 		}
 		s.backoffLocked(n)
-		logging.Warnf("angryduck-controller: spread: node=%s failed to fetch %s of image=%s from %s: %s", d.Node, d.Digest, j.image, path, d.Error)
+		logging.Warnf("adhdduck-controller: spread: node=%s failed to fetch %s of image=%s from %s: %s", d.Node, d.Digest, j.image, path, d.Error)
 	}
 	s.wakeup.wake()
 }

@@ -3,8 +3,8 @@ package worker
 import (
 	"net/http"
 
-	"angryduck/internal/metrics"
-	"angryduck/internal/sharedtoken"
+	"adhdduck/internal/metrics"
+	"adhdduck/internal/sharedtoken"
 )
 
 // NewServer builds the worker's HTTP handler: /pull and /pull/cancel for

@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"angryduck/internal/model"
+	"adhdduck/internal/model"
 )
 
 // fleet is a set of fake workers that accept every order and remember
@@ -130,9 +130,9 @@ func TestPropagator_FansOutLikeATreeWithoutDuplicates(t *testing.T) {
 	}
 	out := scrape(t)
 	for _, want := range []string{
-		`angryduck_controller_image_delivery_seconds{image="` + img + `",node="seed",via="present"}`,
-		`angryduck_controller_image_delivery_seconds{image="` + img + `",node="w1",via="propagate"}`,
-		`angryduck_controller_image_spread_seconds{image="` + img + `",result="complete"}`,
+		`adhdduck_controller_image_delivery_seconds{image="` + img + `",node="seed",via="present"}`,
+		`adhdduck_controller_image_delivery_seconds{image="` + img + `",node="w1",via="propagate"}`,
+		`adhdduck_controller_image_spread_seconds{image="` + img + `",result="complete"}`,
 	} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("image history lacks %s:\n%s", want, out)

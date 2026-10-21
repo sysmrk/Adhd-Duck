@@ -1,6 +1,6 @@
 # Security
 
-Angry Duck moves images between your nodes, so it deserves a careful read
+ADHD Duck moves images between your nodes, so it deserves a careful read
 before you deploy it. This page says what each part can touch, what protects
 it, and what to lock down.
 
@@ -17,7 +17,7 @@ filesystem. It mounts:
 | `/var/lib/containerd/io.containerd.content.v1.content` | read-only | Serve blobs without a round trip through the API (optional). |
 | `/etc/containerd/config.toml` | read-only | Find containerd's root and check `config_path` for the mirror. |
 | `/etc/containerd/certs.d` | read-write | The mirror's `hosts.toml` files. |
-| `/var/lib/angryduck` | read-write | Rescue pins and image-usage history. |
+| `/var/lib/adhdduck` | read-write | Rescue pins and image-usage history. |
 
 It also mounts two Secrets as files: the registry credentials and the shared
 token. The webhook token is mounted only in the controller.
@@ -56,7 +56,7 @@ its own DaemonSet, used on shutdown to tell an uninstall from a rollout.
   propagation send the token, so an unauthenticated report could collect it.
   Without a token these endpoints are open, and rescue, propagation and the
   mirror stay off.
-- **The webhook requires CI's own bearer token** (`angryduck-webhook-token`),
+- **The webhook requires CI's own bearer token** (`adhdduck-webhook-token`),
   separate from the shared token so a leaked CI variable can't talk to
   workers. Without the Secret it is unauthenticated and the controller logs a
   warning at startup. An IP allowlist on the ingress is a good extra layer.
@@ -66,7 +66,7 @@ its own DaemonSet, used on shutdown to tell an uninstall from a rollout.
   example ingress expose only the webhook path, matched exactly.
 - **NetworkPolicy applies to the worker.** Ports `18081` (worker API) and
   `18082` (mirror) are on the pod IP. A policy can restrict `18081` to the
-  Angry Duck pods and your Prometheus; containerd's traffic to `18082` comes
+  ADHD Duck pods and your Prometheus; containerd's traffic to `18082` comes
   from the node itself, which most CNIs (Calico included) always allow.
 - **The mirror answers only containerd.** containerd sends a random per-pod
   token from `hosts.toml` (mode `0600`, root-only); any other pod gets `401`.
@@ -107,7 +107,7 @@ its own DaemonSet, used on shutdown to tell an uninstall from a rollout.
 - Create both token Secrets before installation; the chart does not generate them. Use at least
   32 random characters. Never run without the shared token in production.
 - Restrict the webhook ingress to your CI runners' addresses.
-- Add a NetworkPolicy that allows port `18081` only from Angry Duck pods and
+- Add a NetworkPolicy that allows port `18081` only from ADHD Duck pods and
   Prometheus.
 - Use a CNI that encrypts traffic between nodes if the network isn't trusted.
 - Keep `discard_unpacked_layers = false`, so verified blobs travel instead of
@@ -117,6 +117,6 @@ its own DaemonSet, used on shutdown to tell an uninstall from a rollout.
 ## Reporting a vulnerability
 
 Please don't open a public issue. Report it privately through
-[GitHub's security advisory form](https://github.com/hatam-abolghasemi/Angry-Duck/security/advisories/new),
+[GitHub's security advisory form](https://github.com/sysmrk/Adhd-Duck/security/advisories/new),
 with the version, what an attacker needs, and how to reproduce it. You'll get
 an answer there, and a fix is released before the details are published.

@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"angryduck/internal/model"
+	"adhdduck/internal/model"
 )
 
 // pullOrderRecorder is a fake worker /pull endpoint that records every

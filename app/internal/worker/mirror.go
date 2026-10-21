@@ -17,26 +17,26 @@ import (
 	"sync"
 	"time"
 
-	"angryduck/internal/imageref"
-	"angryduck/internal/logging"
-	"angryduck/internal/metrics"
-	"angryduck/internal/model"
-	"angryduck/internal/sharedtoken"
+	"adhdduck/internal/imageref"
+	"adhdduck/internal/logging"
+	"adhdduck/internal/metrics"
+	"adhdduck/internal/model"
+	"adhdduck/internal/sharedtoken"
 )
 
 var (
 	mirrorRequestsTotal = metrics.NewCounterVec(
-		"angryduck_worker_mirror_requests_total",
+		"adhdduck_worker_mirror_requests_total",
 		"Content requests containerd sent to this node's mirror, by kind (blob, manifest) and result: local (served from this node), peer (from another node), miss (nobody had it: containerd goes to the registry), error.",
 		"node", "kind", "result",
 	)
 	mirrorBytesTotal = metrics.NewCounterVec(
-		"angryduck_worker_mirror_bytes_total",
+		"adhdduck_worker_mirror_bytes_total",
 		"Bytes the mirror served to containerd, by source: local or peer. Every one of them is a byte not downloaded from the registry.",
 		"node", "source",
 	)
 	mirrorServedTotal = metrics.NewCounterVec(
-		"angryduck_worker_mirror_peer_served_bytes_total",
+		"adhdduck_worker_mirror_peer_served_bytes_total",
 		"Bytes this node served to other nodes' mirrors.",
 		"node",
 	)
@@ -187,7 +187,7 @@ func (m *Mirror) serve(w http.ResponseWriter, r *http.Request, kind, digest stri
 		// Nothing was sent (serveLocal cuts the connection otherwise): go on
 		// as if the node didn't have it, to the peers and then a 404, the
 		// only answer that sends containerd on to the next host.
-		logging.Warnf("angryduck-worker[%s]: mirror: serving %s %s locally: %v", m.nodeID, kindLabel, digest, err)
+		logging.Warnf("adhdduck-worker[%s]: mirror: serving %s %s locally: %v", m.nodeID, kindLabel, digest, err)
 		clearBlobHeaders(w)
 	}
 	for _, h := range m.lookup(r.Context(), digest) {
@@ -195,7 +195,7 @@ func (m *Mirror) serve(w http.ResponseWriter, r *http.Request, kind, digest stri
 		if served {
 			if err != nil {
 				mirrorRequestsTotal.Inc(m.nodeID, kindLabel, "error")
-				logging.Warnf("angryduck-worker[%s]: mirror: %s %s from node=%s broke after %d bytes: %v", m.nodeID, kindLabel, digest, h.NodeID, n, err)
+				logging.Warnf("adhdduck-worker[%s]: mirror: %s %s from node=%s broke after %d bytes: %v", m.nodeID, kindLabel, digest, h.NodeID, n, err)
 				return
 			}
 			mirrorRequestsTotal.Inc(m.nodeID, kindLabel, "peer")
@@ -203,7 +203,7 @@ func (m *Mirror) serve(w http.ResponseWriter, r *http.Request, kind, digest stri
 			return
 		}
 		if err != nil {
-			logging.Debugf("angryduck-worker[%s]: mirror: node=%s couldn't serve %s: %v", m.nodeID, h.NodeID, digest, err)
+			logging.Debugf("adhdduck-worker[%s]: mirror: node=%s couldn't serve %s: %v", m.nodeID, h.NodeID, digest, err)
 		}
 	}
 	m.forget(digest)
@@ -373,7 +373,7 @@ func (m *Mirror) RegisterPeer(mux *http.ServeMux) {
 		n, err := m.serveLocal(w, r, kind, digest)
 		mirrorServedTotal.Add(n, m.nodeID)
 		if err != nil {
-			logging.Warnf("angryduck-worker[%s]: mirror: serving %s to %s: %v", m.nodeID, digest, r.RemoteAddr, err)
+			logging.Warnf("adhdduck-worker[%s]: mirror: serving %s to %s: %v", m.nodeID, digest, r.RemoteAddr, err)
 			// Nothing was sent: a 404, so the asking mirror tries its next
 			// holder. An empty 200 would count as served there and reach
 			// containerd as a zero-byte blob.
@@ -384,9 +384,9 @@ func (m *Mirror) RegisterPeer(mux *http.ServeMux) {
 
 // --- containerd configuration ---
 
-// hostsMarker marks the hosts.toml files Angry Duck owns. Files without
+// hostsMarker marks the hosts.toml files ADHD Duck owns. Files without
 // it (written by hand, or by another tool) are never touched.
-const hostsMarker = "# managed by angryduck"
+const hostsMarker = "# managed by adhdduck"
 
 // HostsConfig writes containerd's per-registry hosts.toml files that point
 // pulls at the mirror.
@@ -457,7 +457,7 @@ func (h *HostsConfig) Sync(images []string, enabled bool) {
 	if h.warned == nil {
 		h.warned = map[string]bool{}
 		if cfg, err := os.ReadFile(filepath.Join(h.HostRoot, "/etc/containerd/config.toml")); err == nil && enabled && !strings.Contains(string(cfg), h.ConfigDir) {
-			logging.Warnf("angryduck-worker[%s]: mirror: /etc/containerd/config.toml doesn't set config_path = %q; containerd ignores the mirror until it does", h.NodeID, h.ConfigDir)
+			logging.Warnf("adhdduck-worker[%s]: mirror: /etc/containerd/config.toml doesn't set config_path = %q; containerd ignores the mirror until it does", h.NodeID, h.ConfigDir)
 		}
 	}
 	hosts := map[string]bool{}
@@ -470,7 +470,7 @@ func (h *HostsConfig) Sync(images []string, enabled bool) {
 		if strings.HasPrefix(img, "sha256:") {
 			continue
 		}
-		if host := imageref.Host(imageref.Normalize(img)); host != "" && host != "angryduck.local" {
+		if host := imageref.Host(imageref.Normalize(img)); host != "" && host != "adhdduck.local" {
 			hosts[host] = true
 		}
 	}
@@ -481,7 +481,7 @@ func (h *HostsConfig) Sync(images []string, enabled bool) {
 			p := filepath.Join(root, e.Name(), "hosts.toml")
 			if b, err := os.ReadFile(p); err == nil && bytes.HasPrefix(b, []byte(hostsMarker)) {
 				if os.Remove(p) == nil {
-					logging.Infof("angryduck-worker[%s]: mirror off: removed %s", h.NodeID, filepath.Join(h.ConfigDir, e.Name(), "hosts.toml"))
+					logging.Infof("adhdduck-worker[%s]: mirror off: removed %s", h.NodeID, filepath.Join(h.ConfigDir, e.Name(), "hosts.toml"))
 				}
 			}
 		}
@@ -500,21 +500,21 @@ func (h *HostsConfig) Sync(images []string, enabled bool) {
 		case err == nil && !bytes.HasPrefix(b, []byte(hostsMarker)):
 			if !h.warned[host] {
 				h.warned[host] = true
-				logging.Warnf("angryduck-worker[%s]: mirror: %s exists and isn't ours; leaving %s unmirrored", h.NodeID, filepath.Join(h.ConfigDir, host, "hosts.toml"), host)
+				logging.Warnf("adhdduck-worker[%s]: mirror: %s exists and isn't ours; leaving %s unmirrored", h.NodeID, filepath.Join(h.ConfigDir, host, "hosts.toml"), host)
 			}
 			continue
 		case err == nil && string(b) == want:
 			continue
 		}
 		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
-			logging.Warnf("angryduck-worker[%s]: mirror: %v", h.NodeID, err)
+			logging.Warnf("adhdduck-worker[%s]: mirror: %v", h.NodeID, err)
 			continue
 		}
 		if err := os.WriteFile(p, []byte(want), 0o600); err != nil {
-			logging.Warnf("angryduck-worker[%s]: mirror: writing hosts.toml for %s: %v", h.NodeID, host, err)
+			logging.Warnf("adhdduck-worker[%s]: mirror: writing hosts.toml for %s: %v", h.NodeID, host, err)
 			continue
 		}
-		logging.Infof("angryduck-worker[%s]: mirror: containerd now asks the mirror first for %s", h.NodeID, host)
+		logging.Infof("adhdduck-worker[%s]: mirror: containerd now asks the mirror first for %s", h.NodeID, host)
 	}
 }
 

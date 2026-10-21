@@ -17,7 +17,7 @@ import (
 	"strconv"
 	"strings"
 
-	"angryduck/internal/logging"
+	"adhdduck/internal/logging"
 )
 
 // headroomFraction is how much of the container's memory limit Go is
@@ -64,12 +64,12 @@ func Apply(component string) {
 	}
 	limit, source, ok := readLimit()
 	if !ok {
-		logging.Infof("angryduck-%s: no cgroup memory limit found — leaving Go's default GC behavior untouched", component)
+		logging.Infof("adhdduck-%s: no cgroup memory limit found — leaving Go's default GC behavior untouched", component)
 		return
 	}
 	target := int64(float64(limit) * headroomFraction)
 	debug.SetMemoryLimit(target)
-	logging.Infof("angryduck-%s: cgroup memory limit=%d bytes (%s) — set GOMEMLIMIT=%d bytes (%.0f%% headroom)",
+	logging.Infof("adhdduck-%s: cgroup memory limit=%d bytes (%s) — set GOMEMLIMIT=%d bytes (%.0f%% headroom)",
 		component, limit, source, target, (1-headroomFraction)*100)
 }
 

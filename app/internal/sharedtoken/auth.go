@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"angryduck/internal/logging"
+	"adhdduck/internal/logging"
 )
 
 // Mode decides what Auth.Guard does with a request that lacks a valid
@@ -72,7 +72,7 @@ func (a *Auth) Guard(name string, h http.HandlerFunc) http.HandlerFunc {
 			h(w, r)
 			return
 		}
-		logging.Warnf("angryduck: rejected unauthenticated %s %s from %s", r.Method, name, r.RemoteAddr)
+		logging.Warnf("adhdduck: rejected unauthenticated %s %s from %s", r.Method, name, r.RemoteAddr)
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 	}
 }
@@ -87,7 +87,7 @@ func (a *Auth) warn(name string, r *http.Request) {
 		return
 	}
 	a.lastLog[name] = time.Now()
-	logging.Warnf("angryduck: AUTH_MODE=warn: allowed unauthenticated %s %s from %s (would be rejected under enforce)", r.Method, name, r.RemoteAddr)
+	logging.Warnf("adhdduck: AUTH_MODE=warn: allowed unauthenticated %s %s from %s (would be rejected under enforce)", r.Method, name, r.RemoteAddr)
 }
 
 // SetIfAny adds the token to an outgoing request when one is configured.

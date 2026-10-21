@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"angryduck/internal/logging"
-	"angryduck/internal/model"
+	"adhdduck/internal/logging"
+	"adhdduck/internal/model"
 )
 
 // LayerLister is what the tracker needs from containerd. ContainerdStore has it.
@@ -93,12 +93,12 @@ func (t *LayerTracker) scan(ctx context.Context, force bool) {
 	defer cancel()
 	blobs, err := t.lister.Digests(ctx)
 	if err != nil {
-		logging.Warnf("angryduck-worker[%s]: layer inventory: listing content: %v", t.nodeID, err)
+		logging.Warnf("adhdduck-worker[%s]: layer inventory: listing content: %v", t.nodeID, err)
 		return
 	}
 	snaps, err := t.lister.Snapshots(ctx)
 	if err != nil {
-		logging.Warnf("angryduck-worker[%s]: layer inventory: listing snapshots: %v", t.nodeID, err)
+		logging.Warnf("adhdduck-worker[%s]: layer inventory: listing snapshots: %v", t.nodeID, err)
 		return
 	}
 	// Only committed image snapshots are named by chainID; container

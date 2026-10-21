@@ -10,11 +10,11 @@ import (
 	"google.golang.org/grpc/backoff"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"angryduck/internal/metrics"
+	"adhdduck/internal/metrics"
 )
 
 var containerdCallsTotal = metrics.NewCounterVec(
-	"angryduck_worker_containerd_calls_total",
+	"adhdduck_worker_containerd_calls_total",
 	"gRPC calls this worker made to containerd (its API and CRI), by service and method.",
 	"node", "method")
 

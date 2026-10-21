@@ -1,7 +1,7 @@
 package httpinput
 
 import (
-	"angryduck/internal/model"
+	"adhdduck/internal/model"
 	"net/http/httptest"
 	"strings"
 	"testing"

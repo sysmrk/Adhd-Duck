@@ -10,32 +10,32 @@ import (
 	"sync"
 	"time"
 
-	"angryduck/internal/imageref"
-	"angryduck/internal/layerindex"
-	"angryduck/internal/logging"
-	"angryduck/internal/metrics"
-	"angryduck/internal/model"
-	"angryduck/internal/sharedtoken"
+	"adhdduck/internal/imageref"
+	"adhdduck/internal/layerindex"
+	"adhdduck/internal/logging"
+	"adhdduck/internal/metrics"
+	"adhdduck/internal/model"
+	"adhdduck/internal/sharedtoken"
 )
 
 var (
 	propagationTransfersTotal = metrics.NewCounterVec(
-		"angryduck_controller_propagation_transfers_total",
+		"adhdduck_controller_propagation_transfers_total",
 		"Peer-to-peer transfers ordered while spreading a pushed image, by receiving node and result.",
 		"node", "result",
 	)
 	propagationNodes = metrics.NewGaugeVec(
-		"angryduck_controller_propagation_nodes",
+		"adhdduck_controller_propagation_nodes",
 		"Nodes per image being propagated, by state: have, missing, in_flight, seeding, skipped.",
 		"image", "state",
 	)
 	propagationsTotal = metrics.NewCounterVec(
-		"angryduck_controller_propagations_total",
+		"adhdduck_controller_propagations_total",
 		"Finished propagations: complete (every eligible node has the image), superseded (a newer tag of the same repo was pushed) or expired (PROPAGATE_WINDOW_S ran out).",
 		"result",
 	)
 	seedTimeoutsTotal = metrics.NewCounterVec(
-		"angryduck_controller_seed_timeouts_total",
+		"adhdduck_controller_seed_timeouts_total",
 		"Seeds whose registry pull took too long: the pull was cancelled and the node got the image from a peer instead.",
 		"node",
 	)
@@ -183,7 +183,7 @@ func (p *Propagator) Start(image string) {
 	repo := imageref.Repo(image)
 	for other, job := range p.jobs {
 		if other != image && repo != "" && imageref.Repo(other) == repo {
-			logging.Infof("angryduck-controller: propagator: image=%s superseded by image=%s", other, image)
+			logging.Infof("adhdduck-controller: propagator: image=%s superseded by image=%s", other, image)
 			propagationsTotal.Inc("superseded")
 			recordSpreadEnd(other, "superseded", time.Since(job.started))
 			delete(p.jobs, other)
@@ -197,9 +197,9 @@ func (p *Propagator) Start(image string) {
 	}
 	recordSpreadStart(image, p.jobs[image].started)
 	if p.cfg.Window > 0 {
-		logging.Infof("angryduck-controller: propagator: will spread image=%s to every eligible node for %s", image, p.cfg.Window)
+		logging.Infof("adhdduck-controller: propagator: will spread image=%s to every eligible node for %s", image, p.cfg.Window)
 	} else {
-		logging.Infof("angryduck-controller: propagator: will spread image=%s to every eligible node", image)
+		logging.Infof("adhdduck-controller: propagator: will spread image=%s to every eligible node", image)
 	}
 }
 
@@ -219,7 +219,7 @@ func (p *Propagator) Images() map[string]bool {
 func (p *Propagator) Run(ctx context.Context) {
 	t := time.NewTicker(p.cfg.Interval)
 	defer t.Stop()
-	logging.Infof("angryduck-controller: propagator started: interval=%s window=%s max_concurrent=%d per_source=%d max_utilization=%.2f seed_timeout=[%s..%s, x%.1f] exclude=%v",
+	logging.Infof("adhdduck-controller: propagator started: interval=%s window=%s max_concurrent=%d per_source=%d max_utilization=%.2f seed_timeout=[%s..%s, x%.1f] exclude=%v",
 		p.cfg.Interval, p.cfg.Window, p.cfg.MaxConcurrent, p.cfg.PerSource, p.cfg.MaxUtilization, p.cfg.SeedTimeoutMin, p.cfg.SeedTimeoutMax, p.cfg.SeedTimeoutFactor, p.cfg.ExcludeNodeSubstrings)
 	for {
 		select {
@@ -394,7 +394,7 @@ func (p *Propagator) tick(ctx context.Context) {
 		job.looked = true
 
 		if len(v.missing) == 0 && inFlight == 0 && len(v.seeding) == 0 && len(v.have) > 0 && len(v.skipped) == len(v.skippedExcluded(p)) {
-			logging.Infof("angryduck-controller: propagator: image=%s is on every eligible node (%d), done in %s (excluded: %v)",
+			logging.Infof("adhdduck-controller: propagator: image=%s is on every eligible node (%d), done in %s (excluded: %v)",
 				img, len(v.have), now.Sub(job.started).Round(time.Second), v.skipped)
 			propagationsTotal.Inc("complete")
 			recordSpreadEnd(img, "complete", now.Sub(job.started))
@@ -403,7 +403,7 @@ func (p *Propagator) tick(ctx context.Context) {
 		}
 		expired := p.cfg.Window > 0 && now.Sub(job.started) > p.cfg.Window
 		if expired && inFlight == 0 {
-			logging.Warnf("angryduck-controller: propagator: window for image=%s ran out with %d node(s) still missing it: %v",
+			logging.Warnf("adhdduck-controller: propagator: window for image=%s ran out with %d node(s) still missing it: %v",
 				img, len(v.missing), nodeIDs(v.missing))
 			propagationsTotal.Inc("expired")
 			recordSpreadEnd(img, "expired", now.Sub(job.started))
@@ -495,7 +495,7 @@ func (p *Propagator) send(ctx context.Context, job *propagation, target *workerE
 	defer func() { <-p.sem }()
 
 	if cancelSeed {
-		logging.Warnf("angryduck-controller: propagator: seed node=%s still hasn't pulled image=%s after %s; cancelling its registry pull and shipping it from peers",
+		logging.Warnf("adhdduck-controller: propagator: seed node=%s still hasn't pulled image=%s after %s; cancelling its registry pull and shipping it from peers",
 			target.NodeID, job.image, p.seedTimeout(job).Round(time.Second))
 		seedTimeoutsTotal.Inc(target.NodeID)
 		cancelPull(ctx, target.Address, job.image, p.token)
@@ -518,7 +518,7 @@ func (p *Propagator) send(ctx context.Context, job *propagation, target *workerE
 		}
 		job.next[target.NodeID] = time.Now().Add(wait)
 		p.mu.Unlock()
-		logging.Warnf("angryduck-controller: propagator: node=%s failed to get image=%s from %s (next try in %s): %v",
+		logging.Warnf("adhdduck-controller: propagator: node=%s failed to get image=%s from %s (next try in %s): %v",
 			target.NodeID, job.image, sources[0].NodeID, wait, err)
 		propagationTransfersTotal.Inc(target.NodeID, "failure")
 		return
@@ -530,7 +530,7 @@ func (p *Propagator) send(ctx context.Context, job *propagation, target *workerE
 	p.mu.Unlock()
 	recordTransfer(job.image, target.NodeID, "propagate", res.Bytes, time.Since(start).Seconds())
 	recordDelivery(job.image, target.NodeID, "propagate", since, time.Now())
-	logging.Infof("angryduck-controller: propagator: node=%s got image=%s from %s (%d blob(s), %d snapshot(s), %d bytes, %s)",
+	logging.Infof("adhdduck-controller: propagator: node=%s got image=%s from %s (%d blob(s), %d snapshot(s), %d bytes, %s)",
 		target.NodeID, job.image, orDash(res.Source), res.Blobs, res.Snapshots, res.Bytes, time.Since(start).Round(time.Millisecond))
 	propagationTransfersTotal.Inc(target.NodeID, "success")
 }
@@ -549,7 +549,7 @@ func cancelPull(ctx context.Context, addr, image, token string) {
 	sharedtoken.SetIfAny(req, token)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		logging.Warnf("angryduck-controller: cancelling pull of image=%s on %s: %v", image, addr, err)
+		logging.Warnf("adhdduck-controller: cancelling pull of image=%s on %s: %v", image, addr, err)
 		return
 	}
 	resp.Body.Close()
