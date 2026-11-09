@@ -42,7 +42,33 @@ sudo containerd config dump | grep -E 'snapshotter|discard_unpacked_layers|confi
 `discard_unpacked_layers` باید `false` باشد. فایل پیکربندی containerd را بدون
 هماهنگی تیم پلتفرم جایگزین نکنید.
 
-## ۳. سورس و imageها را آماده کنید
+## ۳. مسیر ساده: نسخه آماده 1.9.0
+
+imageها و chart نسخه 1.9.0 روی GHCR منتشر شده‌اند و دریافت عمومی آن‌ها بررسی
+شده است. برای این مسیر به Docker یا build کردن نیاز ندارید:
+
+```bash
+git clone https://github.com/sysmrk/Adhd-Duck.git
+cd Adhd-Duck
+helm show chart oci://ghcr.io/sysmrk/charts/adhdduck --version 1.9.0
+```
+
+بخش‌های ۴ و ۵ را برای ساخت namespace، توکن‌ها و گواهی انجام دهید و نودهای
+اولیه را طبق بخش ۶ label بزنید. سپس به‌جای build و values دستی از فایل آماده
+با digestهای ثابت استفاده کنید:
+
+```bash
+helm template adhdduck oci://ghcr.io/sysmrk/charts/adhdduck --version 1.9.0 -n adhdduck -f helm/adhdduck/values-production.yaml > .local/rendered.yaml
+kubectl apply --dry-run=server -f .local/rendered.yaml
+helm upgrade --install adhdduck oci://ghcr.io/sysmrk/charts/adhdduck --version 1.9.0 -n adhdduck -f helm/adhdduck/values-production.yaml --wait --timeout 5m
+```
+
+بعد به بخش ۷ بروید. برای برنامه‌هایی با image خصوصی، Secret مربوط به دسترسی
+registry همچنان لازم است. منابع CPU و RAM این فایل نقطه شروع محافظه‌کارانه‌اند؛
+اندازه‌گذاری نهایی به بار واقعی شما وابسته است. مشخصات دقیق artifactها در
+[سند انتشار](releases/1.9.0.md) ثبت شده است.
+
+### مسیر اختیاری: build کردن imageهای خودتان
 
 ```bash
 git clone https://github.com/sysmrk/Adhd-Duck.git

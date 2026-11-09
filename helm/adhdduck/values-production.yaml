@@ -1,0 +1,28 @@
+# Version 1.9.0, immutable artifacts verified through anonymous GHCR HEAD requests.
+# Create the three required authentication/TLS Secrets before installing.
+controller:
+  image:
+    repository: ghcr.io/sysmrk/adhd-duck-controller
+    digest: sha256:efb9b368946d21c65b3f818aa3714eec5aa24c57be817248f946fe3e3c939395
+  resources:
+    requests: {cpu: 100m, memory: 128Mi}
+    limits: {cpu: '1', memory: 256Mi}
+worker:
+  image:
+    repository: ghcr.io/sysmrk/adhd-duck-worker
+    digest: sha256:3bc356ab28ce9700290e00092b85c0d122d204a61a6c1e12e4cf0eb0a08e3211
+  nodeSelector:
+    adhdduck-enabled: 'true'
+  tolerations: []
+  resources:
+    requests: {cpu: 250m, memory: 256Mi}
+    limits: {cpu: '2', memory: 1Gi}
+imagePullSecrets: []
+ingress:
+  enabled: false
+serviceMonitor:
+  enabled: false
+config:
+  GC_ENABLED: 'false'
+  MIRROR_ENABLED: 'false'
+  ALLOW_SNAPSHOT_TRANSFER: 'false'

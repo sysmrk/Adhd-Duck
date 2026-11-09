@@ -9,7 +9,6 @@ on:
     branches: [main]
     paths:
       - app/internal/version/version.go
-      - .github/workflows/release.yml
   workflow_dispatch:
     inputs:
       tag:
@@ -116,7 +115,7 @@ jobs:
       # root, state and socket: overlayfs snapshotter and CRI, as on the nodes.
       - name: Start containerd ${{ env.CONTAINERD_VERSION }}
         run: |
-          curl -fsSL -o /tmp/containerd.tgz \
+          curl --retry 5 --retry-delay 3 --retry-all-errors --connect-timeout 15 --max-time 180 -fsSL -o /tmp/containerd.tgz \
             "https://github.com/containerd/containerd/releases/download/v${CONTAINERD_VERSION}/containerd-${CONTAINERD_VERSION}-linux-amd64.tar.gz"
           mkdir -p /tmp/containerd && tar -xzf /tmp/containerd.tgz -C /tmp/containerd
           cat > /tmp/containerd/config.toml <<'EOF'
@@ -150,7 +149,7 @@ jobs:
 
       - name: containerd log
         if: failure()
-        run: sudo tail -n 200 /tmp/containerd/containerd.log
+        run: sudo tail -n 200 /tmp/containerd/containerd.log 2>/dev/null || true
 
 
   images:

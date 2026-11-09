@@ -30,3 +30,20 @@ No organization-specific production cluster, CNI, registry outage under real
 load, or disk layout was available here. Complete the site acceptance table in
 [production.md](production.md) before expanding to all production nodes. Passing
 a unit test cannot replace that evidence.
+
+The pinned supply-chain and OS scanning pipeline passed on main in
+[CI run 42573138923](https://github.com/sysmrk/Adhd-Duck/actions/runs/42573138923).
+[Release run 42572888654, attempt 2](https://github.com/sysmrk/Adhd-Duck/actions/runs/42572888654)
+completed successfully and published v1.9.0, images, chart and attestations.
+One intermediate CI attempt failed while downloading upstream archives (HTTP
+504); it did not fail a program test. Subsequent runs passed; bounded download
+retries are now configured. The initial release-page API call was denied after
+workflow drift on main; aligning the approved workflow baseline allowed the
+unchanged release source to be published on retry.
+
+Release maintainers: freeze .github/workflows changes while publishing a version.
+GitHub's release API requires additional workflow permission when the target's
+workflow files differ from the current default branch; GITHUB_TOKEN cannot grant
+that permission. Do not compensate by changing an existing version's source or
+retagging its artifacts. Fix the baseline or publish the original source with an
+authorized maintainer credential instead.

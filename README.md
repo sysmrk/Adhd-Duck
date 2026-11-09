@@ -6,10 +6,10 @@ It retains the upstream Apache-2.0 license and attribution; see [NOTICE](NOTICE)
 Source comments and configuration examples are maintained in English; beginner
 installation documentation is available in English and Persian.
 
-The `ghcr.io/sysmrk/adhd-duck-*` images and `adhdduck` Helm chart are this fork's
-release targets. Until a release publishes them, build from source or import
-locally built images; the new coordinates do not imply published artifacts.
-Existing installations need the [rename migration guide](docs/migration.md).
+Version 1.9.0 images and the OCI Helm chart are published on GHCR. See the
+[immutable digests and release evidence](docs/releases/1.9.0.md) and use the
+[pinned production values](helm/adhdduck/values-production.yaml).
+Existing installations need the [migration guide](docs/migration.md).
 
 
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)

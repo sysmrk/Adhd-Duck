@@ -50,7 +50,39 @@ registry `config_path` to include `/etc/containerd/certs.d`. Have your platform
 team manage node configuration and service restarts using its normal rollout
 process; never blindly overwrite an existing containerd configuration.
 
-## 3. Download the source and build images
+## 3. Choose published artifacts or build from source
+
+### A. Install the published 1.9.0 release (recommended)
+
+The two images and OCI chart have been verified anonymously accessible on GHCR.
+No Docker build machine or image push account is needed for this path. Clone the
+repository to obtain the TLS helper and the pinned production values:
+
+```bash
+git clone https://github.com/sysmrk/Adhd-Duck.git
+cd Adhd-Duck
+helm show chart oci://ghcr.io/sysmrk/charts/adhdduck --version 1.9.0
+```
+
+Continue with steps 4 and 5 to create the namespace, token Secrets and TLS Secret.
+Create registry-pull only if the application images you preheat are private.
+Label the initial nodes as shown in step 6. Then install with immutable images:
+
+```bash
+helm template adhdduck oci://ghcr.io/sysmrk/charts/adhdduck --version 1.9.0 \
+  -n adhdduck -f helm/adhdduck/values-production.yaml > .local/rendered.yaml
+kubectl apply --dry-run=server -f .local/rendered.yaml
+helm upgrade --install adhdduck oci://ghcr.io/sysmrk/charts/adhdduck --version 1.9.0 \
+  -n adhdduck -f helm/adhdduck/values-production.yaml --wait --timeout 5m
+```
+
+Continue at step 7. Before changing settings, copy values-production.yaml to
+.local/values.yaml and use that file for subsequent upgrades. The sample values
+are conservative starting resources, not a throughput guarantee. See
+[release digests and evidence](releases/1.9.0.md).
+
+### B. Build your own images (optional)
+
 
 ```bash
 git clone https://github.com/sysmrk/Adhd-Duck.git
