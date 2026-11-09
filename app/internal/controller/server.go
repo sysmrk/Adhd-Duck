@@ -83,7 +83,7 @@ func NewServer(registry *Registry, ranker *Ranker) *Server {
 	// token to, so an unauthenticated report could register an attacker's
 	// address and collect it.
 	s.mux.HandleFunc("/report", s.auth.Guard("/report", s.handleReport))
-	s.mux.HandleFunc("/status", s.handleStatus)
+	s.mux.HandleFunc("/status", s.auth.Guard("/status", s.handleStatus))
 	s.mux.Handle("/metrics", metrics.Handler())
 	s.mux.HandleFunc("/healthz", s.handleHealth)
 	return s

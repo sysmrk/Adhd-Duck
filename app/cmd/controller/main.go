@@ -6,6 +6,7 @@
 package main
 
 import (
+	"adhdduck/internal/peerhttp"
 	"context"
 	"errors"
 	"io/fs"
@@ -36,6 +37,9 @@ func main() {
 	if err := config.Validate(); err != nil {
 		log.Fatalf("invalid configuration: %v", err)
 	}
+	if err := peerhttp.Configure(config.String("PEER_CA_PATH", "/etc/adhdduck/tls/ca.crt"), config.String("PEER_CERT_PATH", "/etc/adhdduck/tls/tls.crt"), config.String("PEER_KEY_PATH", "/etc/adhdduck/tls/tls.key")); err != nil {
+		log.Fatalf("peer TLS: %v", err)
+	}
 	logging.SetLevel(logging.ParseLevel(config.String("LOG_LEVEL", "info")))
 	memlimit.Apply("controller")
 	metrics.SetEventTTL(config.Duration("METRICS_EVENT_TTL_S", 15))
@@ -65,6 +69,9 @@ func main() {
 	ranker.SetMaxUtilization(config.Float("PROPAGATE_MAX_UTILIZATION", 0.70))
 	server := controller.NewServer(registry, ranker)
 	authMode, err := sharedtoken.ParseMode(config.String("AUTH_MODE", ""))
+	if authMode == sharedtoken.Warn {
+		log.Fatal("AUTH_MODE=warn is forbidden: authenticated operation is required")
+	}
 	if err != nil {
 		log.Fatalf("adhdduck-controller: %v", err)
 	}
@@ -170,7 +177,7 @@ func main() {
 	}
 
 	go func() {
-		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := peerhttp.Serve(httpServer); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("adhdduck-controller: http server failed: %v", err)
 		}
 	}()

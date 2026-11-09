@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.9.0
+
+Breaking security release for the ADHD Duck fork. Controller and worker APIs
+now require TLS credentials in adhdduck-peer-tls; peer requests verify the
+cluster CA and use client certificates. Missing tokens stop startup and warn
+mode is refused by executables. Kubelet health probes use HTTPS; webhook CI
+continues to use its separate bearer token. Status inventory requires the
+shared token as well as peer TLS authentication.
+
+Snapshot transfer is disabled by default. Chart defaults disable GC, mirror
+exposure through ingress and optional ServiceMonitors until configured.
+NetworkPolicy, namespace-aware controller discovery, node selection, immutable
+image digests and verified ingress-nginx backend TLS are supported.
+Dependencies and Go build images are updated. CI adds vulnerability, TLS and
+Helm checks; release publishing waits for unit and real-containerd integration
+tests and generates image SBOM/provenance and signed GitHub attestations.
+See getting-started.md, security.md and upstream-comparison.md for scope,
+installation, upgrades and the measured differences from Angry Duck.
+
 ## Unreleased — first eight improvements
 
 - Correct operator documentation, token guidance and mirror defaults.

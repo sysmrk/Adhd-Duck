@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/containerd/containerd/events"
+	"github.com/containerd/containerd/v2/core/events"
 )
 
 // fakeEvents hands out one subscription per Subscribe call.

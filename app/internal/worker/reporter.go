@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"adhdduck/internal/peerhttp"
 	"bytes"
 	"context"
 	"crypto/sha256"
@@ -66,7 +67,7 @@ func NewReporter(nodeID, selfAddress, metricsURL, controllerURL string, interval
 		controllerURL: controllerURL,
 		interval:      interval,
 		inventory:     inv,
-		httpClient:    &http.Client{Timeout: 5 * time.Second},
+		httpClient:    peerhttp.Client(&http.Client{Timeout: 5 * time.Second}),
 		kick:          make(chan struct{}, 1),
 	}
 }

@@ -2,6 +2,7 @@ package worker
 
 import (
 	"adhdduck/internal/httpinput"
+	"adhdduck/internal/peerhttp"
 	"bytes"
 	"context"
 	"crypto/sha256"
@@ -193,12 +194,12 @@ func NewSpread(store SpreadStore, registry BlobOpener, token, nodeID, platform, 
 		store: store, registry: registry, token: token, nodeID: nodeID, platform: platform,
 		controllerURL: strings.TrimRight(controllerURL, "/"), timeout: timeout, epoch: randomSuffix()[:8],
 		// Peers stream for as long as a blob takes; ctx bounds it.
-		peers: &http.Client{Transport: &http.Transport{
+		peers: peerhttp.Client(&http.Client{Transport: &http.Transport{
 			Proxy:                 nil,
 			DialContext:           (&net.Dialer{Timeout: 5 * time.Second}).DialContext,
 			ResponseHeaderTimeout: 30 * time.Second,
-		}},
-		ctl:        &http.Client{Timeout: 5 * time.Second},
+		}}),
+		ctl:        peerhttp.Client(&http.Client{Timeout: 5 * time.Second}),
 		jobs:       map[string]*spreadJob{},
 		xfers:      map[xferKey]*spreadXfer{},
 		finalizing: newKeyedLock(),

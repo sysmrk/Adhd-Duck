@@ -2,6 +2,7 @@ package worker
 
 import (
 	"adhdduck/internal/httpinput"
+	"adhdduck/internal/peerhttp"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -168,12 +169,12 @@ func NewImageRepair(store RepairStore, registry RepairRegistry, platform, nodeID
 	return &ImageRepair{
 		store: store, registry: registry, platform: platform, nodeID: nodeID, interval: interval,
 		busy: busy, onChange: onChange, transfer: 30 * time.Minute,
-		peers: &http.Client{Transport: &http.Transport{
+		peers: peerhttp.Client(&http.Client{Transport: &http.Transport{
 			Proxy:                 nil, // peers are on the node network
 			DialContext:           (&net.Dialer{Timeout: 5 * time.Second}).DialContext,
 			ResponseHeaderTimeout: 30 * time.Second,
-		}},
-		ctl:    &http.Client{Timeout: 5 * time.Second},
+		}}),
+		ctl:    peerhttp.Client(&http.Client{Timeout: 5 * time.Second}),
 		broken: map[string]string{}, names: map[string][]string{}, known: map[string]knownImage{},
 		queue: map[string]string{}, wake: make(chan struct{}, 1),
 	}

@@ -4,6 +4,7 @@ controller:
   image:
     repository: ghcr.io/sysmrk/adhd-duck-controller
     tag: ""
+    digest: ""
   resources:
     requests:
       cpu: 20m
@@ -16,6 +17,7 @@ worker:
   image:
     repository: ghcr.io/sysmrk/adhd-duck-worker
     tag: ""
+    digest: ""
   resources:
     requests:
       cpu: 200m
@@ -23,15 +25,17 @@ worker:
     limits:
       cpu: "2"
       memory: 192Mi
-  tolerations:
-    - operator: Exists
+  nodeSelector:
+    kubernetes.io/os: linux
+    kubernetes.io/arch: amd64
+  tolerations: []
 
 registryCredentials:
   secretName: registry-pull
   optional: true
 
 ingress:
-  enabled: true
+  enabled: false
   className: nginx
   annotations: {}
   tls: []
@@ -39,10 +43,11 @@ ingress:
   path: /webhook/preheat
 
 serviceMonitor:
-  enabled: true
+  enabled: false
   labels:
     release: prometheus
   interval: 15s
+  tlsConfig: {}
 
 config:
   LOG_LEVEL: "info"
@@ -102,7 +107,7 @@ config:
   SPREAD_RETRY_AFTER_S: "15"
   SPREAD_BACKOFF_MAX_S: "600"
   SPREAD_TRANSFER_TIMEOUT_S: "1800"
-  GC_ENABLED: "true"
+  GC_ENABLED: "false"
   GC_INTERVAL_S: "60"
   GC_HIGH_UTILIZATION: "0.70"
   GC_LOW_UTILIZATION: "0.60"

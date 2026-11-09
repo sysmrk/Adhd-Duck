@@ -1,5 +1,12 @@
 # Migrating from Angry Duck to ADHD Duck
 
+> Version 1.9.0 security change: controller/worker APIs now use TLS and peer
+> client certificates. Both token Secrets and `adhdduck-peer-tls` are required.
+> Start with the complete [installation and usage guide](getting-started.md).
+> Older HTTP examples below describe internal discovery URLs, which the peer
+> client upgrades to HTTPS; external API clients must explicitly use HTTPS.
+
+
 The rename covers source imports, binaries, image names, Kubernetes objects,
 Secret references, state paths, metrics, the Helm chart and dashboard. This
 is not a drop-in in-place rename of a running Helm release.

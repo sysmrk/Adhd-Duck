@@ -16,7 +16,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/containerd/containerd/namespaces"
+	"github.com/containerd/containerd/v2/pkg/namespaces"
 
 	"adhdduck/internal/model"
 )

@@ -18,6 +18,8 @@ on:
 permissions:
   contents: write
   packages: write
+  id-token: write
+  attestations: write
 
 concurrency:
   group: release-${{ github.event.inputs.tag || github.ref_name }}
@@ -68,12 +70,81 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: app/go.mod
-      - run: go vet ./... && go test -race -count=1 ./...
+      - run: |
+          go vet ./...
+          go test -race -count=1 ./...
+          go install golang.org/x/vuln/cmd/govulncheck@v1.9.0
+          govulncheck ./...
         working-directory: app
+
+  integration:
+    needs: prepare
+    name: Integration tests (containerd ${{ matrix.containerd }})
+    defaults:
+      run:
+        working-directory: app
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        containerd: ["1.7.36", "2.4.2"]
+    env:
+      CONTAINERD_VERSION: ${{ matrix.containerd }}
+      SOCK: /run/adhdduck-ci/containerd.sock
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.tag }}
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: app/go.mod
+          cache-dependency-path: app/go.sum
+
+      # A containerd of our own, next to the runner's (Docker's), with its own
+      # root, state and socket: overlayfs snapshotter and CRI, as on the nodes.
+      - name: Start containerd ${{ env.CONTAINERD_VERSION }}
+        run: |
+          curl -fsSL -o /tmp/containerd.tgz \
+            "https://github.com/containerd/containerd/releases/download/v${CONTAINERD_VERSION}/containerd-${CONTAINERD_VERSION}-linux-amd64.tar.gz"
+          mkdir -p /tmp/containerd && tar -xzf /tmp/containerd.tgz -C /tmp/containerd
+          cat > /tmp/containerd/config.toml <<'EOF'
+          version = 2
+          root = "/var/lib/adhdduck-ci"
+          state = "/run/adhdduck-ci"
+          [grpc]
+            address = "/run/adhdduck-ci/containerd.sock"
+          [plugins."io.containerd.grpc.v1.cri"]
+            disable_apparmor = true
+            [plugins."io.containerd.grpc.v1.cri".containerd]
+              snapshotter = "overlayfs"
+          EOF
+          sudo mkdir -p /var/lib/adhdduck-ci /run/adhdduck-ci
+          sudo sh -c 'nohup /tmp/containerd/bin/containerd --config /tmp/containerd/config.toml > /tmp/containerd/containerd.log 2>&1 &'
+          for i in $(seq 1 30); do
+            sudo /tmp/containerd/bin/ctr -a "$SOCK" version >/dev/null 2>&1 && exit 0
+            sleep 1
+          done
+          echo "::error::containerd didn't start"; sudo cat /tmp/containerd/containerd.log; exit 1
+
+      - name: Download modules
+        run: go mod download
+
+      # As root: the tests mount snapshots to compare what transfers produced.
+      - name: Integration tests
+        run: |
+          sudo -E env "PATH=$PATH" "HOME=$HOME" "GOPATH=$(go env GOPATH)" "GOCACHE=$(go env GOCACHE)" "GOMODCACHE=$(go env GOMODCACHE)" \
+            ADHDDUCK_CONTAINERD="$SOCK" \
+            go test -tags integration -count=1 -timeout 15m ./internal/worker/
+
+      - name: containerd log
+        if: failure()
+        run: sudo tail -n 200 /tmp/containerd/containerd.log
+
 
   images:
     name: Image ${{ matrix.component }}
-    needs: [prepare, verify]
+    needs: [prepare, verify, integration]
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -89,11 +160,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - uses: docker/build-push-action@v6
+        id: build
         with:
           context: app
           file: app/Dockerfile.${{ matrix.component }}
           platforms: linux/amd64
           push: true
+          provenance: mode=max
+          sbom: true
           tags: |
             ${{ env.REGISTRY }}/${{ env.OWNER }}/adhd-duck-${{ matrix.component }}:${{ needs.prepare.outputs.version }}
             ${{ env.REGISTRY }}/${{ env.OWNER }}/adhd-duck-${{ matrix.component }}:latest
@@ -103,9 +177,15 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.component }}
           cache-to: type=gha,mode=max,scope=${{ matrix.component }}
 
+      - uses: actions/attest-build-provenance@v3
+        with:
+          subject-name: ghcr.io/${{ env.OWNER }}/adhd-duck-${{ matrix.component }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+
   chart:
     name: Helm chart
-    needs: [prepare, verify]
+    needs: [prepare, verify, integration]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -121,6 +201,10 @@ jobs:
           echo "$TOKEN" | helm registry login "$REGISTRY" -u "$ACTOR" --password-stdin
           helm package helm/adhdduck -d dist
           helm push "dist/adhdduck-${V}.tgz" "oci://${REGISTRY}/${OWNER}/charts"
+
+      - uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: dist/adhdduck-${{ needs.prepare.outputs.version }}.tgz
 
   release:
     name: GitHub release

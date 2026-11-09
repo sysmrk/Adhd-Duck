@@ -1,5 +1,12 @@
 # Configuration
 
+> Version 1.9.0 security change: controller/worker APIs now use TLS and peer
+> client certificates. Both token Secrets and `adhdduck-peer-tls` are required.
+> Start with the complete [installation and usage guide](getting-started.md).
+> Older HTTP examples below describe internal discovery URLs, which the peer
+> client upgrades to HTTPS; external API clients must explicitly use HTTPS.
+
+
 ADHD Duck is configured entirely through environment variables. In
 Kubernetes they come from the ConfigMap (or the chart's `config` values).
 Locally they can come from a `.env` file (path set by `ENV_FILE`, default

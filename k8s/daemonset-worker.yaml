@@ -22,7 +22,7 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
         - name: worker
-          image: ghcr.io/sysmrk/adhd-duck-worker:1.8.15
+          image: ghcr.io/sysmrk/adhd-duck-worker:1.9.0
           env:
             - name: NODE_ID
               valueFrom:
@@ -55,6 +55,9 @@ spec:
             - containerPort: 18082
               name: mirror
           volumeMounts:
+            - name: peer-tls
+              mountPath: /etc/adhdduck/tls
+              readOnly: true
             - name: registry-creds
               mountPath: /etc/adhdduck/registry-creds
               readOnly: true
@@ -76,12 +79,14 @@ spec:
           readinessProbe:
             httpGet:
               path: /healthz
+              scheme: HTTPS
               port: 18081
             initialDelaySeconds: 2
             periodSeconds: 5
           livenessProbe:
             httpGet:
               path: /healthz
+              scheme: HTTPS
               port: 18081
             initialDelaySeconds: 5
             periodSeconds: 10
@@ -102,10 +107,13 @@ spec:
             capabilities:
               drop: ["ALL"]
       volumes:
+        - name: peer-tls
+          secret:
+            secretName: adhdduck-peer-tls
         - name: registry-creds
           secret:
             secretName: registry-pull
-            optional: false
+            optional: true
         - name: rescue-token
           secret:
             secretName: adhdduck-rescue-token

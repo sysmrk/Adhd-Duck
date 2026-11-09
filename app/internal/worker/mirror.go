@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"adhdduck/internal/peerhttp"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -99,11 +100,11 @@ func NewMirror(store MirrorStore, nodeID, token, controllerURL string) *Mirror {
 	mirrorServedTotal.Add(0, nodeID)
 	return &Mirror{
 		store: store, nodeID: nodeID, token: token, controllerURL: strings.TrimRight(controllerURL, "/"),
-		client: &http.Client{Transport: &http.Transport{
+		client: peerhttp.Client(&http.Client{Transport: &http.Transport{
 			Proxy:                 nil,
 			DialContext:           (&net.Dialer{Timeout: 3 * time.Second}).DialContext,
 			ResponseHeaderTimeout: 30 * time.Second,
-		}},
+		}}),
 		holders: map[string]holderEntry{},
 	}
 }

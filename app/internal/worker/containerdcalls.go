@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/containerd/containerd/pkg/dialer"
+	"github.com/containerd/containerd/v2/pkg/dialer"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/backoff"
 	"google.golang.org/grpc/credentials/insecure"

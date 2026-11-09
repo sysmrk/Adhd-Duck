@@ -15,6 +15,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"google.golang.org/grpc"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -28,10 +29,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/containerd/containerd"
-	"github.com/containerd/containerd/images"
-	"github.com/containerd/containerd/mount"
-	"github.com/containerd/containerd/namespaces"
+	containerd "github.com/containerd/containerd/v2/client"
+	"github.com/containerd/containerd/v2/core/images"
+	"github.com/containerd/containerd/v2/core/mount"
+	"github.com/containerd/containerd/v2/pkg/namespaces"
 	digest "github.com/opencontainers/go-digest"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"golang.org/x/sys/unix"
@@ -627,7 +628,7 @@ func TestCRI_PullAndList(t *testing.T) {
 	img := buildImage(t, "x", baseLayer)
 	host := testRegistry(t, img, "team/cri-test", "1")
 	ref := host + "/team/cri-test:1"
-	rt := NewRuntime(c.Conn(), registryauth.Empty())
+	rt := NewRuntime(c.Conn().(*grpc.ClientConn), registryauth.Empty())
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 	if err := rt.PullImage(ctx, ref); err != nil {
@@ -690,7 +691,7 @@ func TestCRI_MirrorGetsTokenFromHostsToml(t *testing.T) {
 	b, _ := os.ReadFile(p)
 	os.WriteFile(p, []byte(strings.Replace(string(b), `server = "https://`, `server = "http://`, 1)), 0o600)
 
-	rt := NewRuntime(c.Conn(), registryauth.Empty())
+	rt := NewRuntime(c.Conn().(*grpc.ClientConn), registryauth.Empty())
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 	if err := rt.PullImage(ctx, host+"/team/mirror-test:1"); err != nil {

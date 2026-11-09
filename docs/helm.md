@@ -1,5 +1,12 @@
 # Helm
 
+> Version 1.9.0 security change: controller/worker APIs now use TLS and peer
+> client certificates. Both token Secrets and `adhdduck-peer-tls` are required.
+> Start with the complete [installation and usage guide](getting-started.md).
+> Older HTTP examples below describe internal discovery URLs, which the peer
+> client upgrades to HTTPS; external API clients must explicitly use HTTPS.
+
+
 The chart in `helm/adhdduck` renders exactly what `k8s/` holds: the same
 objects, names, labels, settings and defaults. Only the Namespace is left to
 Helm's `--create-namespace`. Whatever works with the plain manifests works with

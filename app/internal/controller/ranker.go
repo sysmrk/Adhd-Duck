@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"adhdduck/internal/peerhttp"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -170,9 +171,9 @@ func NewRanker(registry *Registry, topN int, interval time.Duration, excludeSubs
 		excludeSubstrings:   excludeSubstrings,
 		preferImageLocality: preferImageLocality,
 		labelRegistryHost:   labelRegistryHost,
-		httpClient: &http.Client{
+		httpClient: peerhttp.Client(&http.Client{
 			Timeout: 5 * time.Second,
-		},
+		}),
 	}
 }
 

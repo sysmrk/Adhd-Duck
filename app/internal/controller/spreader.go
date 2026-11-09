@@ -2,6 +2,7 @@ package controller
 
 import (
 	"adhdduck/internal/httpinput"
+	"adhdduck/internal/peerhttp"
 	"bytes"
 	"context"
 	"crypto/rand"
@@ -256,8 +257,8 @@ func NewSpreader(registry *Registry, resolver ImageResolver, token string, cfg S
 	dial := (&net.Dialer{Timeout: 5 * time.Second}).DialContext
 	return &Spreader{
 		registry: registry, resolver: resolver, token: token, cfg: cfg,
-		orders: &http.Client{Timeout: 10 * time.Second, Transport: &http.Transport{Proxy: nil, DialContext: dial}},
-		finals: &http.Client{Timeout: 16 * time.Minute, Transport: &http.Transport{Proxy: nil, DialContext: dial}},
+		orders: peerhttp.Client(&http.Client{Timeout: 10 * time.Second, Transport: &http.Transport{Proxy: nil, DialContext: dial}}),
+		finals: peerhttp.Client(&http.Client{Timeout: 16 * time.Minute, Transport: &http.Transport{Proxy: nil, DialContext: dial}}),
 		jobs:   map[string]*sjob{},
 		byID:   map[string]*sjob{},
 		wakeup: newWaker(),

@@ -20,6 +20,9 @@ spec:
       - {{ .Release.Namespace }}
   endpoints:
     - port: http
+      scheme: https
+      tlsConfig:
+        {{- toYaml .Values.serviceMonitor.tlsConfig | nindent 8 }}
       path: /metrics
       interval: {{ .Values.serviceMonitor.interval }}
 {{- end }}

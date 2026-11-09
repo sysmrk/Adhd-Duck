@@ -1,0 +1,5 @@
+.local/
+.env
+*.key
+rendered.yaml
+dist/

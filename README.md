@@ -3,8 +3,8 @@
 ADHD Duck is a fork of [Angry Duck](https://github.com/hatam-abolghasemi/Angry-Duck),
 maintained in [sysmrk/Adhd-Duck](https://github.com/sysmrk/Adhd-Duck).
 It retains the upstream Apache-2.0 license and attribution; see [NOTICE](NOTICE).
-Documentation, source comments, configuration examples and contribution guidance
-in this repository are maintained in English.
+Source comments and configuration examples are maintained in English; beginner
+installation documentation is available in English and Persian.
 
 The `ghcr.io/sysmrk/adhd-duck-*` images and `adhdduck` Helm chart are this fork's
 release targets. Until a release publishes them, build from source or import
@@ -106,30 +106,16 @@ and cleanup.
 
 ## Quick start
 
-You need Kubernetes 1.30+, containerd with the overlayfs snapshotter, and
-node-exporter on every node. Check the
-[node settings](docs/node-settings.md) that decide how much ADHD Duck can do,
-then install.
+Version **1.9.0** requires peer TLS certificates and both token Secrets.
+Start with the [complete beginner installation and usage guide](docs/getting-started.md).
+[راهنمای فارسی نصب و استفاده](docs/getting-started.fa.md) is also available.
+It covers checking nodes, building/publishing images, creating credentials,
+installing on a small pool, sending a preheat, CI integration, troubleshooting,
+rotation, rollback and uninstall. Do not install the chart without its prerequisites.
 
-Release workflows target GitHub Container Registry; until a successful release exists, build and load the images yourself:
-`ghcr.io/sysmrk/adhd-duck-controller` and
-`ghcr.io/sysmrk/adhd-duck-worker`. The Helm chart uses them by
-default:
-
-```bash
-helm upgrade --install adhdduck ./helm/adhdduck \
-  --namespace adhdduck --create-namespace \
-  --set ingress.host=adhdduck.example.com
-```
-
-See [Helm](docs/helm.md) for the values, or [Installation](docs/installation.md)
-for plain manifests. Then call the webhook from CI after every push:
-
-```bash
-curl -fsS -m 10 -X POST https://adhdduck.example.com/webhook/preheat \
-  -H "Authorization: Bearer ${ADHDDUCK_WEBHOOK_TOKEN}" \
-  -H 'Content-Type: application/json' -d "{\"image\":\"${IMAGE}\"}" || true
-```
+Read [what changed versus Angry Duck](docs/upstream-comparison.md) and the
+[security model](docs/security.md). Core image distribution features are inherited
+from upstream; this fork adds stricter transport, authentication and release defaults.
 
 ## Documentation
 
@@ -160,8 +146,9 @@ Feature guides: [Preheat](docs/preheat.md) ·
 
 ## Status
 
-The current version is **1.8.15**; see the [changelog](CHANGELOG.md). Angry
-Duck targets Linux nodes running containerd 1.6 or later.
+The current version is **1.9.0**; see the [changelog](CHANGELOG.md). Angry
+Duck targets Linux/amd64 nodes with containerd and overlayfs; see the
+[qualified scope](docs/production.md) and the actual CI results.
 
 ## Feedback and contributing
 

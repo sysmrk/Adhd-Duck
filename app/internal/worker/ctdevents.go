@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/containerd/containerd/events"
+	"github.com/containerd/containerd/v2/core/events"
 
 	"adhdduck/internal/logging"
 	"adhdduck/internal/metrics"

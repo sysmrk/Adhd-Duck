@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"adhdduck/internal/peerhttp"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -179,7 +180,7 @@ func NewRescuer(registry *Registry, pods PodLister, token string, cfg RescuerCon
 		pods:     pods,
 		token:    token,
 		cfg:      cfg,
-		client:   &http.Client{Timeout: cfg.Timeout},
+		client:   peerhttp.Client(&http.Client{Timeout: cfg.Timeout}),
 		sem:      make(chan struct{}, cfg.MaxConcurrent),
 		pairs:    make(map[string]*pairState),
 		repairs:  make(map[string]time.Time),

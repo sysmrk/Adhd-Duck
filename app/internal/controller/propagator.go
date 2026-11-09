@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"adhdduck/internal/peerhttp"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -152,7 +153,7 @@ func NewPropagator(registry *Registry, token string, cfg PropagatorConfig) *Prop
 		registry:  registry,
 		token:     token,
 		cfg:       cfg,
-		client:    &http.Client{Timeout: cfg.Timeout},
+		client:    peerhttp.Client(&http.Client{Timeout: cfg.Timeout}),
 		sem:       make(chan struct{}, cfg.MaxConcurrent),
 		jobs:      make(map[string]*propagation),
 		perSource: make(map[string]int),

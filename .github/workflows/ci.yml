@@ -44,14 +44,23 @@ jobs:
       - name: Build
         run: go build ./cmd/controller ./cmd/worker
 
+      - name: Vulnerability scan
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@v1.9.0
+          govulncheck ./...
+
       - name: Unit tests
         run: go test -race -count=1 ./...
 
   integration:
-    name: Integration tests (real containerd)
+    name: Integration tests (containerd ${{ matrix.containerd }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        containerd: ["1.7.36", "2.4.2"]
     env:
-      CONTAINERD_VERSION: "1.7.27"
+      CONTAINERD_VERSION: ${{ matrix.containerd }}
       SOCK: /run/adhdduck-ci/containerd.sock
     steps:
       - uses: actions/checkout@v4
@@ -115,3 +124,24 @@ jobs:
           helm template test helm/adhdduck --namespace custom > rendered.yaml
           grep -q 'adhdduck-controller.custom.svc.cluster.local' rendered.yaml
           helm template test helm/adhdduck --set networkPolicy.enabled=false > /dev/null
+      - run: python -m pip install PyYAML==6.0.3
+      - run: python scripts/test-chart.py
+
+  containers:
+    name: Build container images
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
+    strategy:
+      matrix:
+        component: [controller, worker]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: app
+          file: app/Dockerfile.${{ matrix.component }}
+          push: false
+          platforms: linux/amd64

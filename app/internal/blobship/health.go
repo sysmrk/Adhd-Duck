@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/containerd/containerd/errdefs"
+	"github.com/containerd/errdefs"
 )
 
 // Health is whether a registered image can actually be run here.
