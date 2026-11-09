@@ -65,13 +65,15 @@ const (
 //   - source: POST /blobs/plan, /blobs/export and /snapshots/export,
 //     called by the receiving peer.
 type Rescue struct {
-	store    blobship.Store
-	pins     *Pins
-	token    string
-	nodeID   string
-	platform string
-	client   *http.Client
-	sem      chan struct{} // bounds concurrent receives on this node
+	// DisableSnapshotTransfer rejects unverifiable snapshot transfers. Set before serving.
+	DisableSnapshotTransfer bool
+	store                   blobship.Store
+	pins                    *Pins
+	token                   string
+	nodeID                  string
+	platform                string
+	client                  *http.Client
+	sem                     chan struct{} // bounds concurrent receives on this node
 
 	mu       sync.Mutex
 	inflight map[string]*rescueCall // image -> the rescue already running for it
@@ -601,6 +603,9 @@ const (
 // here before the commit, on top of gzip's CRC-32. An older source sends
 // its overlayfs directory format with only the CRC; it is converted here.
 func (rs *Rescue) receiveSnapshot(ctx context.Context, plan blobship.Plan, l blobship.Layer, src model.RescueSource) (int64, error) {
+	if rs.DisableSnapshotTransfer {
+		return 0, fmt.Errorf("snapshot transfer disabled: retain registry blobs on source nodes")
+	}
 	parent := ""
 	if i := layerIndex(plan, l.ChainID); i > 0 {
 		parent = plan.Layers[i-1].ChainID
@@ -797,6 +802,10 @@ func (rs *Rescue) HandleExport(w http.ResponseWriter, r *http.Request) {
 // HandleSnapshotExport streams one layer's snapshot directory as a
 // gzip-compressed tar. Only layers of the named image can be requested.
 func (rs *Rescue) HandleSnapshotExport(w http.ResponseWriter, r *http.Request) {
+	if rs.DisableSnapshotTransfer {
+		http.Error(w, "snapshot transfer disabled", http.StatusForbidden)
+		return
+	}
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return

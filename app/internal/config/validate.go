@@ -12,6 +12,7 @@ import (
 // getters retain their defaults for absent values and legacy library callers.
 func Validate() error {
 	schema := map[string]string{
+		"ALLOW_SNAPSHOT_TRANSFER":         "Bool",
 		"GC_BATCH":                        "Int",
 		"GC_ENABLED":                      "Bool",
 		"GC_HIGH_UTILIZATION":             "Float",

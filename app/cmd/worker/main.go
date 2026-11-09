@@ -137,6 +137,7 @@ func main() {
 	}
 	token, tokenErr := sharedtoken.Load(config.String("RESCUE_TOKEN_PATH", "/etc/adhdduck/rescue-token/token"))
 	if tokenErr != nil {
+		log.Fatalf("shared authentication token is required: %v", tokenErr)
 		log.Printf("adhdduck-worker[%s]: WARNING: no usable token (%v): rescue, propagation and the mirror's peer lookups are off, and /pull is unauthenticated", nodeID, tokenErr)
 		token = ""
 	}
@@ -187,6 +188,7 @@ func main() {
 	var pins *worker.Pins
 	if store != nil && tokenErr == nil && config.Bool("RESCUE_ENABLED", true) {
 		rescue, pins = newRescue(ctx, nodeID, hostRoot, stateDir, store, token)
+		rescue.DisableSnapshotTransfer = !config.Bool("ALLOW_SNAPSHOT_TRANSFER", false)
 		rescue.OnSuccess(reporter.Kick)
 	}
 	var extra []func(*http.ServeMux)
@@ -311,7 +313,7 @@ func main() {
 		}()
 	}
 
-	httpServer := &http.Server{Addr: listenAddr, Handler: worker.NewServer(auth, puller, rescue, extra...)}
+	httpServer := &http.Server{ReadHeaderTimeout: 10 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 64 << 10, Addr: listenAddr, Handler: worker.NewServer(auth, puller, rescue, extra...)}
 	go func() {
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("adhdduck-worker[%s]: http server failed: %v", nodeID, err)

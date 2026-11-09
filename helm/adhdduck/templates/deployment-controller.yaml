@@ -82,8 +82,6 @@ spec:
         - name: rescue-token
           secret:
             secretName: adhdduck-rescue-token
-            optional: true
         - name: webhook-token
           secret:
             secretName: adhdduck-webhook-token
-            optional: true

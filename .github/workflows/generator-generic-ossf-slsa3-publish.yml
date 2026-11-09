@@ -20,7 +20,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     outputs:
-      digests: ${{ steps.hash.outputs.digests }}
+      digests: ${{ steps.hash.outputs.hashes }}
 
     steps:
       - uses: actions/checkout@v4
@@ -30,11 +30,15 @@ jobs:
       # Step 1: Build your artifacts.
       #
       # ========================================================
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: app/go.mod
       - name: Build artifacts
         run: |
-            # These are some amazing artifacts.
-            echo "artifact1" > artifact1
-            echo "artifact2" > artifact2
+            mkdir -p dist
+            cd app
+            CGO_ENABLED=0 go build -trimpath -o ../dist/controller ./cmd/controller
+            CGO_ENABLED=0 go build -trimpath -o ../dist/worker ./cmd/worker
 
       # ========================================================
       #
@@ -50,7 +54,7 @@ jobs:
           set -euo pipefail
 
           # List the artifacts the provenance will refer to.
-          files=$(ls artifact*)
+          files="dist/controller dist/worker"
           # Generate the subjects (base64 encoded).
           echo "hashes=$(sha256sum $files | base64 -w0)" >> "${GITHUB_OUTPUT}"
 

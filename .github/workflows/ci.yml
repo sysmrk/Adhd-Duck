@@ -100,3 +100,18 @@ jobs:
       - name: containerd log
         if: failure()
         run: sudo tail -n 200 /tmp/containerd/containerd.log
+
+  helm:
+    name: Helm validation
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - run: helm lint helm/adhdduck
+      - run: |
+          helm template test helm/adhdduck --namespace custom > rendered.yaml
+          grep -q 'adhdduck-controller.custom.svc.cluster.local' rendered.yaml
+          helm template test helm/adhdduck --set networkPolicy.enabled=false > /dev/null

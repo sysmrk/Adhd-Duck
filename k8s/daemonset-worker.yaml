@@ -105,11 +105,11 @@ spec:
         - name: registry-creds
           secret:
             secretName: registry-pull
-            optional: true
+            optional: false
         - name: rescue-token
           secret:
             secretName: adhdduck-rescue-token
-            optional: true
+            optional: false
         - name: containerd-sock
           hostPath:
             path: /run/containerd/containerd.sock

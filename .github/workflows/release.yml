@@ -58,9 +58,22 @@ jobs:
             grep -q ":${V}\$" "$f" || { echo "::error::$f doesn't use image tag ${V}"; exit 1; }
           done
 
+  verify:
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.tag }}
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: app/go.mod
+      - run: go vet ./... && go test -race -count=1 ./...
+        working-directory: app
+
   images:
     name: Image ${{ matrix.component }}
-    needs: prepare
+    needs: [prepare, verify]
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -92,7 +105,7 @@ jobs:
 
   chart:
     name: Helm chart
-    needs: prepare
+    needs: [prepare, verify]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

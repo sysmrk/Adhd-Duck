@@ -111,7 +111,7 @@ node-exporter on every node. Check the
 [node settings](docs/node-settings.md) that decide how much ADHD Duck can do,
 then install.
 
-Prebuilt images for every release are on GitHub Container Registry:
+Release workflows target GitHub Container Registry; until a successful release exists, build and load the images yourself:
 `ghcr.io/sysmrk/adhd-duck-controller` and
 `ghcr.io/sysmrk/adhd-duck-worker`. The Helm chart uses them by
 default:
@@ -175,3 +175,7 @@ See [Development](docs/development.md) to build and test it.
 ## License
 
 ADHD Duck is licensed under the [Apache License 2.0](LICENSE).
+
+## Production deployment
+
+Read [the production gate](docs/production.md) before deploying this hardening candidate.

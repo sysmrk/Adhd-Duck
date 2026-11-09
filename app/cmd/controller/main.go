@@ -75,7 +75,7 @@ func main() {
 		server.SetWebhookToken(wt)
 		log.Printf("adhdduck-controller: /webhook/preheat requires the webhook token from %s", webhookTokenPath)
 	case webhookTokenPath == "" || errors.Is(err, fs.ErrNotExist):
-		log.Printf("adhdduck-controller: WARNING: no webhook token at %q: /webhook/preheat is unauthenticated", webhookTokenPath)
+		log.Fatalf("webhook authentication token is required at %q", webhookTokenPath)
 	default:
 		// A token that exists but is unusable is a mistake, not a choice
 		// to run open.
@@ -107,6 +107,7 @@ func main() {
 	// other, and the workers only accept that with the shared token.
 	token, tokenErr := sharedtoken.Load(config.String("RESCUE_TOKEN_PATH", "/etc/adhdduck/rescue-token/token"))
 	if tokenErr != nil {
+		log.Fatalf("shared authentication token is required: %v", tokenErr)
 		log.Printf("adhdduck-controller: WARNING: no usable rescue token, so rescue and propagation are off: %v", tokenErr)
 	} else {
 		server.SetToken(token)
@@ -161,8 +162,11 @@ func main() {
 	go ranker.Run(ctx)
 
 	httpServer := &http.Server{
-		Addr:    listenAddr,
-		Handler: server.Handler(),
+		Addr:              listenAddr,
+		ReadHeaderTimeout: 10 * time.Second,
+		IdleTimeout:       60 * time.Second,
+		MaxHeaderBytes:    64 << 10,
+		Handler:           server.Handler(),
 	}
 
 	go func() {

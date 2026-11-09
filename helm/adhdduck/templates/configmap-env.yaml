@@ -7,5 +7,5 @@ metadata:
     app.kubernetes.io/name: adhdduck
 data:
   {{- range $k, $v := .Values.config }}
-  {{ $k }}: {{ $v | toString | quote }}
+  {{ $k }}: {{ if and (eq $k "CONTROLLER_URL") (not $v) }}{{ printf "http://adhdduck-controller.%s.svc.cluster.local:8080" $.Release.Namespace | quote }}{{ else }}{{ $v | toString | quote }}{{ end }}
   {{- end }}

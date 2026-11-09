@@ -34,6 +34,7 @@ ingress:
   enabled: true
   className: nginx
   annotations: {}
+  tls: []
   host: adhdduck.example.com
   path: /webhook/preheat
 
@@ -62,7 +63,7 @@ config:
   ORIGIN_CHECK_DELAY_S: "120"
   ORIGIN_CHECK_REGISTRIES: ""
   WORKER_LISTEN_ADDR: ":18081"
-  CONTROLLER_URL: "http://adhdduck-controller.adhdduck.svc.cluster.local:8080"
+  CONTROLLER_URL: ""
   REPORT_INTERVAL_S: "15"
   PREHEAT_ATTRIBUTION_INTERVAL_S: "300"
   PREHEAT_ATTRIBUTION_RETENTION_S: "360"
@@ -116,3 +117,8 @@ config:
   MIRROR_LISTEN_ADDR: ":18082"
   MIRROR_CONTAINERD_CONFIG_DIR: "/etc/containerd/certs.d"
   MIRROR_REGISTRIES: "registry.example.com"
+
+networkPolicy:
+  enabled: true
+  monitoringPeers: []
+  webhookPeers: []
