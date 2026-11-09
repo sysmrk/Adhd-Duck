@@ -1,4 +1,4 @@
-FROM golang:1.27.3-alpine3.24 AS build
+FROM golang:1.27.3-alpine3.24@sha256:fa3d596898d9f126af7c01d14ee7597bab3f39cccf392ef36b69fe77cd681f18 AS build
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
@@ -6,6 +6,6 @@ COPY internal ./internal
 COPY cmd/worker ./cmd/worker
 RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/adhdduck-worker ./cmd/worker
 
-FROM gcr.io/distroless/static-debian13
+FROM gcr.io/distroless/static-debian13@sha256:448810357cc8e67b7208988abdba0f5ec3d3aebee0a5b13eb624979792cffc0f
 COPY --from=build /out/adhdduck-worker /adhdduck-worker
 ENTRYPOINT ["/adhdduck-worker"]

@@ -22,9 +22,9 @@ jobs:
     name: Lint and unit tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version-file: app/go.mod
           cache-dependency-path: app/go.sum
@@ -63,9 +63,9 @@ jobs:
       CONTAINERD_VERSION: ${{ matrix.containerd }}
       SOCK: /run/adhdduck-ci/containerd.sock
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version-file: app/go.mod
           cache-dependency-path: app/go.sum
@@ -117,8 +117,8 @@ jobs:
       run:
         working-directory: .
     steps:
-      - uses: actions/checkout@v4
-      - uses: azure/setup-helm@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4
       - run: helm lint helm/adhdduck
       - run: |
           helm template test helm/adhdduck --namespace custom > rendered.yaml
@@ -137,11 +137,20 @@ jobs:
       matrix:
         component: [controller, worker]
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: app
           file: app/Dockerfile.${{ matrix.component }}
           push: false
+          load: true
+          tags: adhdduck-${{ matrix.component }}:verify
           platforms: linux/amd64
+      - uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
+        with:
+          image-ref: adhdduck-${{ matrix.component }}:verify
+          scanners: vuln
+          vuln-type: os
+          severity: HIGH,CRITICAL
+          exit-code: '1'

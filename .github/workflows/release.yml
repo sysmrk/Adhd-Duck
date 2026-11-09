@@ -6,6 +6,10 @@ name: Release
 on:
   push:
     tags: ["v*.*.*"]
+    branches: [main]
+    paths:
+      - app/internal/version/version.go
+      - .github/workflows/release.yml
   workflow_dispatch:
     inputs:
       tag:
@@ -36,17 +40,24 @@ jobs:
     outputs:
       tag: ${{ steps.v.outputs.tag }}
       version: ${{ steps.v.outputs.version }}
+      source: ${{ steps.v.outputs.source }}
     steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.sha }}
       - id: v
         env:
-          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+          TAG: ${{ github.event.inputs.tag || (github.ref_type == 'tag' && github.ref_name) || '' }}
         run: |
+          if [ -z "$TAG" ]; then TAG="v$(sed -n 's/^version: *//p' helm/adhdduck/Chart.yaml)"; fi
           [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::$TAG is not vX.Y.Z"; exit 1; }
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ steps.v.outputs.tag }}
+          echo "source=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          if [ -n "$(git ls-remote origin "refs/tags/$TAG")" ]; then
+            git fetch origin "refs/tags/$TAG:refs/tags/$TAG"
+            [ "$(git rev-parse "$TAG^{commit}")" = "$(git rev-parse HEAD)" ] || { echo "::error::Version already belongs to a different commit; bump version"; exit 1; }
+          fi
       - name: Tag, chart and changelog agree
         env:
           V: ${{ steps.v.outputs.version }}
@@ -64,10 +75,10 @@ jobs:
     needs: prepare
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          ref: ${{ needs.prepare.outputs.tag }}
-      - uses: actions/setup-go@v5
+          ref: ${{ needs.prepare.outputs.source }}
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version-file: app/go.mod
       - run: |
@@ -92,11 +103,11 @@ jobs:
       CONTAINERD_VERSION: ${{ matrix.containerd }}
       SOCK: /run/adhdduck-ci/containerd.sock
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          ref: ${{ needs.prepare.outputs.tag }}
+          ref: ${{ needs.prepare.outputs.source }}
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version-file: app/go.mod
           cache-dependency-path: app/go.sum
@@ -150,16 +161,32 @@ jobs:
       matrix:
         component: [controller, worker]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          ref: ${{ needs.prepare.outputs.tag }}
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
+          ref: ${{ needs.prepare.outputs.source }}
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
+      - name: Build image for OS vulnerability scan
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: app
+          file: app/Dockerfile.${{ matrix.component }}
+          platforms: linux/amd64
+          push: false
+          load: true
+          tags: adhdduck-${{ matrix.component }}:verify
+      - uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
+        with:
+          image-ref: adhdduck-${{ matrix.component }}:verify
+          scanners: vuln
+          vuln-type: os
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+      - uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         id: build
         with:
           context: app
@@ -177,7 +204,7 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.component }}
           cache-to: type=gha,mode=max,scope=${{ matrix.component }}
 
-      - uses: actions/attest-build-provenance@v3
+      - uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3
         with:
           subject-name: ghcr.io/${{ env.OWNER }}/adhd-duck-${{ matrix.component }}
           subject-digest: ${{ steps.build.outputs.digest }}
@@ -188,10 +215,10 @@ jobs:
     needs: [prepare, verify, integration]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          ref: ${{ needs.prepare.outputs.tag }}
-      - uses: azure/setup-helm@v4
+          ref: ${{ needs.prepare.outputs.source }}
+      - uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4
       - name: Push chart to ghcr.io
         env:
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -202,7 +229,7 @@ jobs:
           helm package helm/adhdduck -d dist
           helm push "dist/adhdduck-${V}.tgz" "oci://${REGISTRY}/${OWNER}/charts"
 
-      - uses: actions/attest-build-provenance@v3
+      - uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3
         with:
           subject-path: dist/adhdduck-${{ needs.prepare.outputs.version }}.tgz
 
@@ -211,9 +238,9 @@ jobs:
     needs: [prepare, images, chart]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          ref: ${{ needs.prepare.outputs.tag }}
+          ref: ${{ needs.prepare.outputs.source }}
           fetch-depth: 0
       - name: Title and notes
         env:
@@ -222,7 +249,7 @@ jobs:
           TITLE: ${{ github.event.inputs.title }}
           REPO_URL: ${{ github.server_url }}/${{ github.repository }}
         run: |
-          git fetch --force origin "refs/tags/${TAG}:refs/tags/${TAG}"
+          git fetch origin "refs/tags/${TAG}:refs/tags/${TAG}" 2>/dev/null || true
           if [ -z "$TITLE" ]; then
             TITLE=$(git tag -l --format='%(contents:subject)' "$TAG")
             case "$TITLE" in "ADHD Duck"*|"$TAG"|"$V") TITLE="" ;; esac
@@ -267,9 +294,10 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ needs.prepare.outputs.tag }}
+          SOURCE: ${{ needs.prepare.outputs.source }}
         run: |
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release edit "$TAG" --title "$TITLE" --notes-file notes.md --latest
           else
-            gh release create "$TAG" --title "$TITLE" --notes-file notes.md --latest --verify-tag
+            gh release create "$TAG" --title "$TITLE" --notes-file notes.md --latest --target "$SOURCE"
           fi
