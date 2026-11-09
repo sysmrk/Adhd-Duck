@@ -3,8 +3,7 @@
 ADHD Duck is a fork of [Angry Duck](https://github.com/hatam-abolghasemi/Angry-Duck),
 maintained in [sysmrk/Adhd-Duck](https://github.com/sysmrk/Adhd-Duck).
 It retains the upstream Apache-2.0 license and attribution; see [NOTICE](NOTICE).
-Source comments and configuration examples are maintained in English; beginner
-installation documentation is available in English and Persian.
+Documentation, source comments and configuration examples are maintained in English.
 
 Version 1.9.0 images and the OCI Helm chart are published on GHCR. See the
 [immutable digests and release evidence](docs/releases/1.9.0.md) and use the
@@ -108,7 +107,6 @@ and cleanup.
 
 Version **1.9.0** requires peer TLS certificates and both token Secrets.
 Start with the [complete beginner installation and usage guide](docs/getting-started.md).
-[راهنمای فارسی نصب و استفاده](docs/getting-started.fa.md) is also available.
 It covers checking nodes, building/publishing images, creating credentials,
 installing on a small pool, sending a preheat, CI integration, troubleshooting,
 rotation, rollback and uninstall. Do not install the chart without its prerequisites.
